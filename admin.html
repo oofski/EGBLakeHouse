@@ -341,10 +341,16 @@
   /* ---------- storage ---------- */
   var LS_BOOKINGS="ebg_bookings", LS_BLOCKED="ebg_blocked_dates", LS_PW="ebg_admin_pw";
   var SS_AUTH="ebg_admin_auth";
+  // Guarded write: never lets a QuotaExceededError (or disabled storage) throw
+  // unhandled and silently abort the handler. Returns true on success.
+  function safeSet(key,val){
+    try{ localStorage.setItem(key,val); return true; }
+    catch(e){ toast("⚠️ Browser storage is full — change NOT saved. Export bookings in Settings, then clear old ones to free space."); return false; }
+  }
   function getBookings(){ try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS))||[]; }catch(e){ return []; } }
-  function saveBookings(b){ localStorage.setItem(LS_BOOKINGS, JSON.stringify(b)); }
+  function saveBookings(b){ return safeSet(LS_BOOKINGS, JSON.stringify(b)); }
   function getBlocked(){ try{ return JSON.parse(localStorage.getItem(LS_BLOCKED))||[]; }catch(e){ return []; } }
-  function saveBlocked(b){ localStorage.setItem(LS_BLOCKED, JSON.stringify(b)); }
+  function saveBlocked(b){ return safeSet(LS_BLOCKED, JSON.stringify(b)); }
 
   /* ---------- date helpers ---------- */
   function toISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -851,10 +857,11 @@
         if(!blocked.some(function(x){return x.date===iso;})){ blocked.push({date:iso,reason:reason}); added++; }
         d=addDays(d,1);
       }
-      saveBlocked(blocked);
-      document.getElementById("rangeStart").value=""; document.getElementById("rangeEnd").value="";
-      renderBlockedCal(); renderChips(); renderAdminCal();
-      toast(added+" date"+(added===1?"":"s")+" blocked.");
+      if(saveBlocked(blocked)){
+        document.getElementById("rangeStart").value=""; document.getElementById("rangeEnd").value="";
+        renderBlockedCal(); renderChips(); renderAdminCal();
+        toast(added+" date"+(added===1?"":"s")+" blocked.");
+      }
     });
     document.getElementById("clearBlockedBtn").addEventListener("click",confirmClearBlocked);
   }
