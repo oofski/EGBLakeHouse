@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Microsoft 365 sync (optional): MSAL + shared storage layer. Falls back to this browser if unavailable. -->
+<script src="https://alcdn.msauth.net/browser/2.38.4/js/msal-browser.min.js"></script>
+<script src="ebg-store.js"></script>
 <style>
   :root{
     --cream:#F5F0E8;
@@ -699,9 +702,9 @@
   /* ---------- localStorage helpers ---------- */
   var LS_BOOKINGS = "ebg_bookings";
   var LS_BLOCKED  = "ebg_blocked_dates";
-  function getBookings(){ try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS)) || []; }catch(e){ return []; } }
-  function saveBookings(b){ try{ localStorage.setItem(LS_BOOKINGS, JSON.stringify(b)); return true; }catch(e){ return false; } }
-  function getBlocked(){ try{ return JSON.parse(localStorage.getItem(LS_BLOCKED)) || []; }catch(e){ return []; } }
+  function getBookings(){ if(window.EBGStore) return EBGStore.getBookings(); try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS)) || []; }catch(e){ return []; } }
+  function saveBookings(b){ if(window.EBGStore) return EBGStore.saveBookings(b); try{ localStorage.setItem(LS_BOOKINGS, JSON.stringify(b)); return true; }catch(e){ return false; } }
+  function getBlocked(){ if(window.EBGStore) return EBGStore.getBlocked(); try{ return JSON.parse(localStorage.getItem(LS_BLOCKED)) || []; }catch(e){ return []; } }
 
   /* ---------- date helpers ---------- */
   function toISO(d){
@@ -1221,7 +1224,7 @@
   /* ============================================================
      SUBMIT
      ============================================================ */
-  document.getElementById("submitBooking").addEventListener("click",function(){
+  document.getElementById("submitBooking").addEventListener("click",async function(){
     // re-validate earlier steps minimally
     if(!state.checkIn||!state.checkOut){ showStep(1); document.getElementById("calError").textContent="Please select your dates."; return; }
     if(!state.renter || !state.renter.email){ showStep(2); validateRenter(); return; }
@@ -1277,8 +1280,9 @@
     };
 
     var all=getBookings(); all.push(booking);
-    if(!saveBookings(all)){
-      showSubmitError("We couldn't save your booking — your browser's storage is full, likely from large uploaded files. Please upload smaller photos (a phone snapshot is fine, not a multi-page PDF) and try again. If this keeps happening, contact Susan Haise at 414-397-2882.");
+    var saved = await saveBookings(all);
+    if(!saved){
+      showSubmitError("We couldn't save your booking. If you're connected to Microsoft 365, the connection may have dropped (see the status tag at the bottom-left); otherwise your browser storage may be full from large files. Please try again, or contact Susan Haise at 414-397-2882.");
       return;
     }
 
@@ -1371,11 +1375,13 @@
     warn.innerHTML='<span>⚠️</span><span>Your browser is blocking site storage (this can happen in private/incognito mode). Bookings can’t be saved until storage is enabled.</span>';
     document.querySelector(".container.page").insertBefore(warn, document.getElementById("stepper"));
   }
-  renderDow();
-  renderCalendar();
-  renderGuests();
-  renderVehicles();
-  showStep(1);
+  function boot(){
+    var p = (window.EBGStore && EBGStore.init) ? EBGStore.init() : Promise.resolve({mode:"local"});
+    Promise.resolve(p).then(function(){
+      renderDow(); renderCalendar(); renderGuests(); renderVehicles(); showStep(1);
+    });
+  }
+  boot();
 })();
 </script>
 </body>

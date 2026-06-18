@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Microsoft 365 sync (optional): MSAL + shared storage layer. Falls back to this browser if unavailable. -->
+<script src="https://alcdn.msauth.net/browser/2.38.4/js/msal-browser.min.js"></script>
+<script src="ebg-store.js"></script>
 <style>
   :root{
     --cream:#F5F0E8; --warm-white:#FDFAF5; --gold:#B8965A; --gold-light:#D4B483;
@@ -347,10 +350,10 @@
     try{ localStorage.setItem(key,val); return true; }
     catch(e){ toast("⚠️ Browser storage is full — change NOT saved. Export bookings in Settings, then clear old ones to free space."); return false; }
   }
-  function getBookings(){ try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS))||[]; }catch(e){ return []; } }
-  function saveBookings(b){ return safeSet(LS_BOOKINGS, JSON.stringify(b)); }
-  function getBlocked(){ try{ return JSON.parse(localStorage.getItem(LS_BLOCKED))||[]; }catch(e){ return []; } }
-  function saveBlocked(b){ return safeSet(LS_BLOCKED, JSON.stringify(b)); }
+  function getBookings(){ if(window.EBGStore) return EBGStore.getBookings(); try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS))||[]; }catch(e){ return []; } }
+  function saveBookings(b){ if(window.EBGStore) return EBGStore.saveBookings(b); return safeSet(LS_BOOKINGS, JSON.stringify(b)); }
+  function getBlocked(){ if(window.EBGStore) return EBGStore.getBlocked(); try{ return JSON.parse(localStorage.getItem(LS_BLOCKED))||[]; }catch(e){ return []; } }
+  function saveBlocked(b){ if(window.EBGStore) return EBGStore.saveBlocked(b); return safeSet(LS_BLOCKED, JSON.stringify(b)); }
 
   /* ---------- date helpers ---------- */
   function toISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
@@ -394,6 +397,14 @@
   document.getElementById("logoutBtn").addEventListener("click",function(){
     sessionStorage.removeItem(SS_AUTH);
     location.reload();
+  });
+  // Kick off Microsoft 365 sign-in + shared data load. When it resolves, refresh
+  // any views already on screen so the dashboard fills in once SharePoint loads.
+  var _m365 = (window.EBGStore && EBGStore.init) ? EBGStore.init() : Promise.resolve({mode:"local"});
+  Promise.resolve(_m365).then(function(){
+    if(document.getElementById("dashboard").style.display==="block"){
+      try{ renderBookings(); renderAdminCal(); renderChips(); }catch(e){}
+    }
   });
   if(sessionStorage.getItem(SS_AUTH)==="1"){ showDashboard(); }
   else { document.getElementById("pwInput").focus(); }
