@@ -39,6 +39,18 @@
     } catch (e) { return false; }
   }
 
+  // Wait for the MSAL library to be present (handles slow CDN / onerror fallback).
+  function waitForMsal(timeout) {
+    return new Promise(function (resolve) {
+      if (typeof msal !== "undefined") return resolve(true);
+      var start = Date.now();
+      var iv = setInterval(function () {
+        if (typeof msal !== "undefined") { clearInterval(iv); resolve(true); }
+        else if (Date.now() - start > timeout) { clearInterval(iv); resolve(false); }
+      }, 100);
+    });
+  }
+
   // ---- runtime state ----
   var state = {
     mode: "local",            // "local" | "m365"
@@ -371,36 +383,42 @@
     mode: "local",
     ready: false,
     init: function () {
-      // No MSAL, disabled, or not yet switched on -> local mode (keeps the app fully working).
-      if (!CONFIG.enabled || typeof msal === "undefined" || !m365Requested()) {
-        state.mode = "local"; this.mode = "local"; this.ready = true; state.ready = true;
-        return Promise.resolve({ mode: "local" });
-      }
-      statusChip("Connecting to Microsoft 365…", "work");
-      try { state.pca = buildPca(); } catch (e) { return fail(e); }
       var self = this;
-      return signIn().then(function (account) {
-        if (!account) return { mode: "redirecting" }; // page is navigating to sign-in
-        state.account = account; state.pca.setActiveAccount(account);
-        return resolveSite()
-          .then(resolveLists)
-          .then(ensureSchema)
-          .then(resolveDrive)
-          .then(loadAll)
-          .then(function () {
-            state.mode = "m365"; self.mode = "m365"; self.ready = true; state.ready = true;
-            statusChip("✓ Microsoft 365 — " + account.username, "ok");
-            return { mode: "m365" };
-          });
-      }).catch(function (e) { return fail(e); });
-
+      function goLocal(extra) {
+        state.mode = "local"; self.mode = "local"; self.ready = true; state.ready = true;
+        return Promise.resolve(Object.assign({ mode: "local" }, extra || {}));
+      }
       function fail(e) {
         state.lastError = (e && e.message) || String(e);
-        state.mode = "local"; self.mode = "local"; self.ready = true; state.ready = true;
-        statusChip("⚠ Microsoft 365 unavailable — using this device only (click for details)", "err");
+        statusChip("⚠ Microsoft 365 error (tap to copy details). Add ?m365=0 to use this device only.", "err");
         console.error("[EBGStore] falling back to local:", e);
-        return { mode: "local", error: state.lastError };
+        return goLocal({ error: state.lastError });
       }
+      // Not switched on (or disabled) -> stay local silently; the public links keep working.
+      if (!CONFIG.enabled || !m365Requested()) return goLocal();
+      statusChip("Connecting to Microsoft 365…", "work");
+      return waitForMsal(6000).then(function (loaded) {
+        if (!loaded) {
+          state.lastError = "Microsoft sign-in library (msal-browser) failed to load — blocked by the network or a wrong CDN URL.";
+          statusChip("⚠ Microsoft sign-in didn't load (tap to copy). Add ?m365=0 to use this device only.", "err");
+          return goLocal({ error: state.lastError });
+        }
+        try { state.pca = buildPca(); } catch (e) { return fail(e); }
+        return signIn().then(function (account) {
+          if (!account) return { mode: "redirecting" }; // page is navigating to sign-in
+          state.account = account; state.pca.setActiveAccount(account);
+          return resolveSite()
+            .then(resolveLists)
+            .then(ensureSchema)
+            .then(resolveDrive)
+            .then(loadAll)
+            .then(function () {
+              state.mode = "m365"; self.mode = "m365"; self.ready = true; state.ready = true;
+              statusChip("✓ Microsoft 365 — " + account.username, "ok");
+              return { mode: "m365" };
+            });
+        });
+      }).catch(fail);
     },
     isCloud: function () { return state.mode === "m365"; },
     getBookings: function () {
