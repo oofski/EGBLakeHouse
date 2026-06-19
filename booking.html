@@ -7,1384 +7,675 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
-<!-- Microsoft 365 sync (optional): MSAL + shared storage layer. Falls back to this browser if unavailable. -->
-<script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"
-        onerror="(function(){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.1/lib/msal-browser.min.js';document.head.appendChild(s);})()"></script>
-<script>document.write('<scr'+'ipt src="ebg-store.js?cb='+Date.now()+'"><\/scr'+'ipt>');</script>
+<script src="ebg-store.js?v=13"></script>
 <style>
-  :root{
-    --cream:#F5F0E8;
-    --warm-white:#FDFAF5;
-    --gold:#B8965A;
-    --gold-light:#D4B483;
-    --gold-dark:#8B6E3A;
-    --charcoal:#2C2C2C;
-    --medium-gray:#6B6B6B;
-    --light-gray:#E8E3DA;
-    --border:#D4C9B5;
-    --success:#4A7C59;
-    --warning:#C4813A;
-    --danger:#A0442A;
-    --white:#FFFFFF;
-    --shadow:0 4px 20px rgba(44,44,44,.08);
-    --shadow-lg:0 10px 40px rgba(44,44,44,.14);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html{scroll-behavior:smooth;}
-  body{
-    font-family:'Jost','Helvetica Neue',sans-serif;
-    background:var(--cream);
-    color:var(--charcoal);
-    line-height:1.6;
-    font-weight:300;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3,h4{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-height:1.2;color:var(--charcoal);}
-  /* ---------- HEADER ---------- */
-  header.site-header{
-    background:var(--cream);
-    text-align:center;
-    padding:42px 20px 34px;
-    border-bottom:1px solid var(--border);
-  }
-  .logo-text{
-    font-family:'Cormorant Garamond',Georgia,serif;
-    font-size:clamp(2.1rem,5vw,3.2rem);
-    color:var(--gold);
-    letter-spacing:1px;
-    font-weight:600;
-    line-height:1.05;
-  }
-  .logo-sub{
-    font-family:'Jost',sans-serif;
-    font-weight:300;
-    letter-spacing:6px;
-    text-transform:uppercase;
-    font-size:clamp(.8rem,2vw,1.05rem);
-    color:var(--charcoal);
-    margin-top:6px;
-  }
-  .gold-divider{
-    width:80px;height:2px;background:var(--gold-light);
-    margin:18px auto 14px;border:0;
-  }
-  .property-address{
-    color:var(--medium-gray);font-size:.92rem;letter-spacing:.5px;
-  }
-  /* ---------- LAYOUT ---------- */
-  .container{max-width:880px;margin:0 auto;padding:0 18px;}
-  .page{padding:32px 0 80px;}
-  /* ---------- STEP INDICATOR ---------- */
-  .stepper{
-    display:flex;justify-content:space-between;align-items:flex-start;
-    position:relative;margin:34px auto 14px;max-width:760px;padding:0 6px;
-  }
-  .stepper::before{
-    content:"";position:absolute;top:17px;left:8%;right:8%;height:2px;
-    background:var(--border);z-index:0;
-  }
-  .stepper-progress{
-    content:"";position:absolute;top:17px;left:8%;height:2px;
-    background:var(--gold);z-index:1;transition:width .4s ease;width:0;
-  }
-  .step-node{
-    position:relative;z-index:2;display:flex;flex-direction:column;
-    align-items:center;flex:1;cursor:default;
-  }
-  .step-dot{
-    width:36px;height:36px;border-radius:50%;background:var(--warm-white);
-    border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
-    font-weight:500;color:var(--medium-gray);transition:all .35s ease;font-size:.95rem;
-  }
-  .step-node.active .step-dot{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 0 0 5px rgba(184,150,90,.18);}
-  .step-node.done .step-dot{background:var(--gold-dark);border-color:var(--gold-dark);color:#fff;}
-  .step-label{
-    margin-top:9px;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase;
-    color:var(--medium-gray);text-align:center;max-width:90px;
-  }
-  .step-node.active .step-label{color:var(--gold-dark);font-weight:500;}
-  @media(max-width:600px){.step-label{display:none;}.stepper{margin-top:24px;}}
-  /* ---------- CARDS / STEP PANELS ---------- */
-  .step-panel{
-    display:none;background:var(--warm-white);border:1px solid var(--border);
-    border-radius:8px;padding:30px 28px;box-shadow:var(--shadow);
-    opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease;
-  }
-  .step-panel.active{display:block;opacity:1;transform:translateY(0);}
-  .step-title{font-size:1.7rem;margin-bottom:4px;}
-  .step-intro{color:var(--medium-gray);margin-bottom:22px;font-size:.95rem;}
-  .section-divider{height:1px;background:var(--border);margin:24px 0;position:relative;}
-  .section-divider::after{content:"";position:absolute;left:0;top:0;width:48px;height:1px;background:var(--gold);}
-  @media(max-width:600px){.step-panel{padding:22px 16px;}}
-  /* ---------- BUTTONS ---------- */
-  .btn{
-    font-family:'Jost',sans-serif;font-weight:400;border:none;cursor:pointer;
-    border-radius:50px;padding:13px 30px;font-size:.95rem;letter-spacing:.5px;
-    transition:all .25s ease;display:inline-flex;align-items:center;gap:8px;justify-content:center;
-  }
-  .btn-gold{background:var(--gold);color:#fff;}
-  .btn-gold:hover{background:var(--gold-dark);box-shadow:0 6px 18px rgba(184,150,90,.35);}
-  .btn-outline{background:transparent;color:var(--gold-dark);border:1.5px solid var(--gold);}
-  .btn-outline:hover{background:var(--gold);color:#fff;}
-  .btn-ghost{background:var(--light-gray);color:var(--charcoal);}
-  .btn-ghost:hover{background:var(--border);}
-  .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
-  .btn-lg{padding:16px 44px;font-size:1.05rem;}
-  .btn-sm{padding:8px 18px;font-size:.85rem;}
-  .nav-buttons{display:flex;justify-content:space-between;margin-top:30px;gap:12px;}
-  /* ---------- FLOATING LABEL FIELDS ---------- */
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;}
-  @media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
-  .field{position:relative;}
-  .field input,.field select{
-    width:100%;padding:18px 14px 8px;border:1.5px solid var(--border);
-    border-radius:8px;background:var(--white);font-family:'Jost',sans-serif;
-    font-size:.95rem;color:var(--charcoal);transition:border-color .25s ease,box-shadow .25s ease;
-  }
-  .field input:focus,.field select:focus{
-    outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,90,.15);
-  }
-  .field label{
-    position:absolute;left:14px;top:14px;color:var(--medium-gray);
-    font-size:.95rem;pointer-events:none;transition:all .2s ease;background:transparent;
-  }
-  .field input:focus+label,
-  .field input:not(:placeholder-shown)+label,
-  .field select:focus+label,
-  .field select.filled+label{
-    top:5px;font-size:.68rem;letter-spacing:.5px;color:var(--gold-dark);text-transform:uppercase;
-  }
-  .field .err{color:var(--danger);font-size:.78rem;margin-top:4px;display:none;}
-  .field.invalid input,.field.invalid select{border-color:var(--danger);}
-  .field.invalid .err{display:block;}
-  .field.full{grid-column:1/-1;}
-  /* ---------- CALENDAR ---------- */
-  .cal-wrap{max-width:430px;margin:0 auto;}
-  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-  .cal-head h3{font-size:1.4rem;}
-  .cal-nav{
-    width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);
-    background:var(--white);cursor:pointer;font-size:1.1rem;color:var(--gold-dark);
-    display:flex;align-items:center;justify-content:center;transition:all .2s ease;
-  }
-  .cal-nav:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
-  .cal-dow{text-align:center;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);padding:6px 0;}
-  .cal-cell{
-    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-    border-radius:8px;font-size:.9rem;background:var(--cream);cursor:pointer;
-    border:1.5px solid transparent;transition:all .15s ease;user-select:none;
-  }
-  .cal-cell.empty{background:transparent;cursor:default;}
-  .cal-cell.available:hover{background:var(--gold-light);color:#fff;}
-  .cal-cell.today{border-color:var(--gold);font-weight:600;}
-  .cal-cell.selected{background:var(--gold);color:#fff;border-color:var(--gold-dark);}
-  .cal-cell.range{background:var(--gold-light);color:#fff;}
-  .cal-cell.booked{background:var(--charcoal);color:#8a8a8a;text-decoration:line-through;cursor:not-allowed;}
-  .cal-cell.blocked{background:var(--charcoal);color:#8a8a8a;text-decoration:line-through;cursor:not-allowed;}
-  .cal-cell.buffer{background:var(--light-gray);color:#b0a99b;cursor:not-allowed;}
-  .cal-cell.past{background:transparent;color:#cfc8ba;cursor:not-allowed;}
-  .cal-legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:18px;font-size:.78rem;color:var(--medium-gray);}
-  .cal-legend span{display:flex;align-items:center;gap:6px;}
-  .lg-swatch{width:14px;height:14px;border-radius:4px;display:inline-block;}
-  .stay-summary{
-    margin-top:22px;background:var(--cream);border:1px solid var(--border);border-radius:8px;
-    padding:18px 20px;display:flex;justify-content:space-around;text-align:center;gap:14px;flex-wrap:wrap;
-  }
-  .stay-summary .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--medium-gray);}
-  .stay-summary .val{font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--gold-dark);}
-  .cal-error{color:var(--danger);text-align:center;margin-top:12px;font-size:.85rem;min-height:18px;}
-  /* ---------- COUNTERS / GUEST & VEHICLE CARDS ---------- */
-  .section-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
-  .section-head h3{font-size:1.5rem;}
-  .counter-badge{
-    background:var(--cream);border:1px solid var(--border);border-radius:50px;
-    padding:6px 16px;font-size:.85rem;color:var(--gold-dark);font-weight:500;
-  }
-  .hint-note{font-size:.8rem;color:var(--medium-gray);font-style:italic;margin:4px 0 14px;}
-  .item-card{
-    background:var(--white);border:1px solid var(--border);border-radius:8px;
-    padding:16px 16px 16px;margin-bottom:14px;position:relative;
-    animation:slideIn .35s ease;overflow:hidden;
-  }
-  @keyframes slideIn{from{opacity:0;transform:translateY(-8px);max-height:0;}to{opacity:1;transform:translateY(0);max-height:400px;}}
-  .item-card.removing{animation:slideOut .3s ease forwards;}
-  @keyframes slideOut{to{opacity:0;transform:translateX(20px);max-height:0;padding-top:0;padding-bottom:0;margin-bottom:0;border-width:0;}}
-  .item-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-  @media(max-width:600px){.item-grid{grid-template-columns:1fr;}}
-  .remove-x{
-    position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;
-    border:none;background:var(--light-gray);color:var(--danger);cursor:pointer;font-size:1rem;
-    display:flex;align-items:center;justify-content:center;transition:all .2s ease;z-index:2;
-  }
-  .remove-x:hover{background:var(--danger);color:#fff;}
-  .info-banner{
-    background:rgba(196,129,58,.12);border-left:4px solid var(--warning);
-    border-radius:6px;padding:14px 16px;margin:14px 0;font-size:.88rem;color:var(--gold-dark);
-    display:flex;gap:10px;align-items:flex-start;
-  }
-  /* ---------- AMENITY TOGGLES ---------- */
-  .toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-  @media(max-width:600px){.toggle-grid{grid-template-columns:1fr;}}
-  .toggle-card{
-    border:2px solid var(--border);border-radius:8px;padding:22px 20px;cursor:pointer;
-    background:var(--white);transition:all .25s ease;position:relative;
-  }
-  .toggle-card:hover{border-color:var(--gold-light);}
-  .toggle-card.checked{border-color:var(--gold);background:rgba(184,150,90,.06);box-shadow:0 0 0 3px rgba(184,150,90,.12);}
-  .toggle-card .tc-icon{font-size:2.2rem;line-height:1;}
-  .toggle-card .tc-label{font-family:'Cormorant Garamond',serif;font-size:1.35rem;margin:8px 0 4px;}
-  .toggle-card .tc-desc{font-size:.82rem;color:var(--medium-gray);}
-  .toggle-card .tc-check{
-    position:absolute;top:16px;right:16px;width:24px;height:24px;border-radius:6px;
-    border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:.85rem;transition:all .2s ease;
-  }
-  .toggle-card.checked .tc-check{background:var(--gold);border-color:var(--gold);}
-  /* ---------- PRICING RECEIPT ---------- */
-  .receipt{
-    background:var(--cream);border:1px solid var(--border);border-radius:8px;
-    padding:24px;max-width:420px;margin:20px auto 0;box-shadow:var(--shadow);
-  }
-  .receipt h4{font-size:1.3rem;text-align:center;margin-bottom:14px;color:var(--gold-dark);}
-  .receipt-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--border);font-size:.95rem;}
-  .receipt-total{display:flex;justify-content:space-between;padding-top:14px;margin-top:6px;font-size:1.25rem;font-family:'Cormorant Garamond',serif;color:var(--gold-dark);font-weight:600;}
-  .receipt-note{font-size:.74rem;font-style:italic;color:var(--medium-gray);text-align:center;margin-top:12px;}
-  /* ---------- LEGAL DOCS ---------- */
-  .doc-viewer{
-    background:var(--cream);border:1px solid var(--border);border-radius:8px;
-    padding:24px 26px;max-height:360px;overflow-y:auto;margin-bottom:8px;font-size:.88rem;
-  }
-  .doc-viewer h3{font-size:1.4rem;text-align:center;margin-bottom:4px;letter-spacing:.5px;}
-  .doc-viewer h4{font-size:1.05rem;margin:18px 0 6px;color:var(--gold-dark);}
-  .doc-viewer p{margin-bottom:10px;}
-  .doc-viewer ul{margin:6px 0 10px 22px;}
-  .doc-viewer li{margin-bottom:5px;}
-  .doc-viewer .doc-meta{text-align:center;color:var(--medium-gray);font-size:.8rem;margin-bottom:8px;}
-  .doc-label{font-weight:500;letter-spacing:.5px;text-transform:uppercase;font-size:.8rem;color:var(--gold-dark);margin:26px 0 10px;}
-  /* checkbox row */
-  .check-row{display:flex;align-items:flex-start;gap:12px;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;cursor:pointer;}
-  .check-row input{width:20px;height:20px;accent-color:var(--gold);margin-top:2px;flex-shrink:0;cursor:pointer;}
-  .check-row label{cursor:pointer;font-size:.92rem;}
-  /* signature */
-  .sig-box{border:1.5px solid var(--border);border-radius:8px;background:var(--white);position:relative;}
-  #sigCanvas{display:block;width:100%;height:170px;border-radius:8px;touch-action:none;cursor:crosshair;}
-  .sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#cfc8ba;font-style:italic;pointer-events:none;}
-  /* uploads */
-  .upload-field{border:2px dashed var(--border);border-radius:8px;padding:18px;text-align:center;background:var(--white);transition:border-color .2s ease;margin-bottom:6px;}
-  .upload-field:hover{border-color:var(--gold-light);}
-  .upload-field input[type=file]{display:none;}
-  .upload-trigger{cursor:pointer;color:var(--gold-dark);font-size:.9rem;}
-  .upload-preview{margin-top:12px;display:flex;align-items:center;gap:12px;justify-content:center;font-size:.85rem;}
-  .upload-preview img{max-height:80px;border-radius:6px;border:1px solid var(--border);}
-  .pdf-chip{background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;}
-  /* ---------- CONFIRMATION ---------- */
-  #confirmScreen{display:none;text-align:center;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;padding:54px 30px;box-shadow:var(--shadow);}
-  #confirmScreen .big-emoji{font-size:3.4rem;}
-  #confirmScreen h2{font-size:2.1rem;margin:14px 0 6px;color:var(--gold-dark);}
-  #confirmScreen .conf-id{font-size:1.3rem;font-family:'Cormorant Garamond',serif;color:var(--gold);letter-spacing:1px;margin:8px 0;}
-  #confirmScreen p{color:var(--medium-gray);max-width:540px;margin:8px auto;}
-  /* ---------- HELP FAB + MODAL ---------- */
-  .help-fab{
-    position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;
-    background:var(--gold);color:#fff;border:none;font-size:1.6rem;cursor:pointer;
-    box-shadow:var(--shadow-lg);z-index:50;transition:all .25s ease;font-family:'Cormorant Garamond',serif;
-  }
-  .help-fab:hover{background:var(--gold-dark);transform:scale(1.07);}
-  .modal-overlay{
-    position:fixed;inset:0;background:rgba(44,44,44,.5);backdrop-filter:blur(3px);
-    display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
-  }
-  .modal-overlay.open{display:flex;animation:fadeIn .25s ease;}
-  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-  .modal-box{
-    background:var(--warm-white);border-radius:10px;max-width:480px;width:100%;
-    padding:32px 30px;box-shadow:var(--shadow-lg);position:relative;animation:popIn .3s ease;
-    max-height:85vh;overflow-y:auto;
-  }
-  @keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
-  .modal-box h3{font-size:1.6rem;color:var(--gold-dark);margin-bottom:14px;text-align:center;}
-  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--medium-gray);}
-  .help-list{list-style:none;}
-  .help-list li{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;font-size:.92rem;}
-  .help-list li:last-child{border-bottom:none;}
-  .help-list .hi{font-size:1.2rem;}
-  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+:root{
+--cream:#F5F0E8;--warm-white:#FDFAF5;--gold:#B8965A;--gold-light:#D4B483;
+--gold-dark:#8B6E3A;--charcoal:#2C2C2C;--medium-gray:#6B6B6B;--light-gray:#E8E3DA;
+--border:#D4C9B5;--success:#4A7C59;--warning:#C4813A;--danger:#A0442A;--white:#FFFFFF;
+--shadow:0 4px 20px rgba(44,44,44,.08);--shadow-lg:0 10px 40px rgba(44,44,44,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Jost','Helvetica Neue',sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.6;font-weight:300;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-height:1.2;color:var(--charcoal);}
+header.site-header{background:var(--cream);text-align:center;padding:42px 20px 34px;border-bottom:1px solid var(--border);}
+.logo-text{font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(2.1rem,5vw,3.2rem);color:var(--gold);letter-spacing:1px;font-weight:600;line-height:1.05;}
+.logo-sub{font-family:'Jost',sans-serif;font-weight:300;letter-spacing:6px;text-transform:uppercase;font-size:clamp(.8rem,2vw,1.05rem);color:var(--charcoal);margin-top:6px;}
+.gold-divider{width:80px;height:2px;background:var(--gold-light);margin:18px auto 14px;border:0;}
+.property-address{color:var(--medium-gray);font-size:.92rem;letter-spacing:.5px;}
+.container{max-width:880px;margin:0 auto;padding:0 18px;}
+.page{padding:32px 0 80px;}
+.stepper{display:flex;justify-content:space-between;align-items:flex-start;position:relative;margin:34px auto 14px;max-width:760px;padding:0 6px;}
+.stepper::before{content:"";position:absolute;top:17px;left:8%;right:8%;height:2px;background:var(--border);z-index:0;}
+.stepper-progress{content:"";position:absolute;top:17px;left:8%;height:2px;background:var(--gold);z-index:1;transition:width .4s ease;width:0;}
+.step-node{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;flex:1;cursor:default;}
+.step-dot{width:36px;height:36px;border-radius:50%;background:var(--warm-white);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:500;color:var(--medium-gray);transition:all .35s ease;font-size:.95rem;}
+.step-node.active .step-dot{background:var(--gold);border-color:var(--gold);color:#fff;box-shadow:0 0 0 5px rgba(184,150,90,.18);}
+.step-node.done .step-dot{background:var(--gold-dark);border-color:var(--gold-dark);color:#fff;}
+.step-label{margin-top:9px;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase;color:var(--medium-gray);text-align:center;max-width:90px;}
+.step-node.active .step-label{color:var(--gold-dark);font-weight:500;}
+@media(max-width:600px){.step-label{display:none;}.stepper{margin-top:24px;}}
+.step-panel{display:none;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;padding:30px 28px;box-shadow:var(--shadow);opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease;}
+.step-panel.active{display:block;opacity:1;transform:translateY(0);}
+.step-title{font-size:1.7rem;margin-bottom:4px;}
+.step-intro{color:var(--medium-gray);margin-bottom:22px;font-size:.95rem;}
+.section-divider{height:1px;background:var(--border);margin:24px 0;position:relative;}
+.section-divider::after{content:"";position:absolute;left:0;top:0;width:48px;height:1px;background:var(--gold);}
+@media(max-width:600px){.step-panel{padding:22px 16px;}}
+.btn{font-family:'Jost',sans-serif;font-weight:400;border:none;cursor:pointer;border-radius:50px;padding:13px 30px;font-size:.95rem;letter-spacing:.5px;transition:all .25s ease;display:inline-flex;align-items:center;gap:8px;justify-content:center;}
+.btn-gold{background:var(--gold);color:#fff;}
+.btn-gold:hover{background:var(--gold-dark);box-shadow:0 6px 18px rgba(184,150,90,.35);}
+.btn-outline{background:transparent;color:var(--gold-dark);border:1.5px solid var(--gold);}
+.btn-outline:hover{background:var(--gold);color:#fff;}
+.btn-ghost{background:var(--light-gray);color:var(--charcoal);}
+.btn-ghost:hover{background:var(--border);}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+.btn-lg{padding:16px 44px;font-size:1.05rem;}
+.btn-sm{padding:8px 18px;font-size:.85rem;}
+.nav-buttons{display:flex;justify-content:space-between;margin-top:30px;gap:12px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+.field{position:relative;}
+.field input,.field select{width:100%;padding:18px 14px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:'Jost',sans-serif;font-size:.95rem;color:var(--charcoal);transition:border-color .25s ease,box-shadow .25s ease;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,90,.15);}
+.field label{position:absolute;left:14px;top:14px;color:var(--medium-gray);font-size:.95rem;pointer-events:none;transition:all .2s ease;background:transparent;}
+.field input:focus+label,.field input:not(:placeholder-shown)+label,.field select:focus+label,.field select.filled+label{top:5px;font-size:.68rem;letter-spacing:.5px;color:var(--gold-dark);text-transform:uppercase;}
+.field .err{color:var(--danger);font-size:.78rem;margin-top:4px;display:none;}
+.field.invalid input,.field.invalid select{border-color:var(--danger);}
+.field.invalid .err{display:block;}
+.field.full{grid-column:1/-1;}
+.cal-wrap{max-width:430px;margin:0 auto;}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-head h3{font-size:1.4rem;}
+.cal-nav{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-size:1.1rem;color:var(--gold-dark);display:flex;align-items:center;justify-content:center;transition:all .2s ease;}
+.cal-nav:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-dow{text-align:center;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);padding:6px 0;}
+.cal-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.9rem;background:var(--cream);cursor:pointer;border:1.5px solid transparent;transition:all .15s ease;user-select:none;}
+.cal-cell.empty{background:transparent;cursor:default;}
+.cal-cell.available:hover{background:var(--gold-light);color:#fff;}
+.cal-cell.today{border-color:var(--gold);font-weight:600;}
+.cal-cell.selected{background:var(--gold);color:#fff;border-color:var(--gold-dark);}
+.cal-cell.range{background:var(--gold-light);color:#fff;}
+.cal-cell.booked{background:var(--charcoal);color:#8a8a8a;text-decoration:line-through;cursor:not-allowed;}
+.cal-cell.blocked{background:var(--charcoal);color:#8a8a8a;text-decoration:line-through;cursor:not-allowed;}
+.cal-cell.buffer{background:var(--light-gray);color:#b0a99b;cursor:not-allowed;}
+.cal-cell.past{background:transparent;color:#cfc8ba;cursor:not-allowed;}
+.cal-legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:18px;font-size:.78rem;color:var(--medium-gray);}
+.cal-legend span{display:flex;align-items:center;gap:6px;}
+.lg-swatch{width:14px;height:14px;border-radius:4px;display:inline-block;}
+.stay-summary{margin-top:22px;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:18px 20px;display:flex;justify-content:space-around;text-align:center;gap:14px;flex-wrap:wrap;}
+.stay-summary .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--medium-gray);}
+.stay-summary .val{font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--gold-dark);}
+.cal-error{color:var(--danger);text-align:center;margin-top:12px;font-size:.85rem;min-height:18px;}
+.section-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+.section-head h3{font-size:1.5rem;}
+.counter-badge{background:var(--cream);border:1px solid var(--border);border-radius:50px;padding:6px 16px;font-size:.85rem;color:var(--gold-dark);font-weight:500;}
+.hint-note{font-size:.8rem;color:var(--medium-gray);font-style:italic;margin:4px 0 14px;}
+.item-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px 16px 16px;margin-bottom:14px;position:relative;animation:slideIn .35s ease;overflow:hidden;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);max-height:0;}to{opacity:1;transform:translateY(0);max-height:400px;}}
+.item-card.removing{animation:slideOut .3s ease forwards;}
+@keyframes slideOut{to{opacity:0;transform:translateX(20px);max-height:0;padding-top:0;padding-bottom:0;margin-bottom:0;border-width:0;}}
+.item-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+@media(max-width:600px){.item-grid{grid-template-columns:1fr;}}
+.remove-x{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:none;background:var(--light-gray);color:var(--danger);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s ease;z-index:2;}
+.remove-x:hover{background:var(--danger);color:#fff;}
+.info-banner{background:rgba(196,129,58,.12);border-left:4px solid var(--warning);border-radius:6px;padding:14px 16px;margin:14px 0;font-size:.88rem;color:var(--gold-dark);display:flex;gap:10px;align-items:flex-start;}
+.toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:600px){.toggle-grid{grid-template-columns:1fr;}}
+.toggle-card{border:2px solid var(--border);border-radius:8px;padding:22px 20px;cursor:pointer;background:var(--white);transition:all .25s ease;position:relative;}
+.toggle-card:hover{border-color:var(--gold-light);}
+.toggle-card.checked{border-color:var(--gold);background:rgba(184,150,90,.06);box-shadow:0 0 0 3px rgba(184,150,90,.12);}
+.toggle-card .tc-icon{font-size:2.2rem;line-height:1;}
+.toggle-card .tc-label{font-family:'Cormorant Garamond',serif;font-size:1.35rem;margin:8px 0 4px;}
+.toggle-card .tc-desc{font-size:.82rem;color:var(--medium-gray);}
+.toggle-card .tc-check{position:absolute;top:16px;right:16px;width:24px;height:24px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;transition:all .2s ease;}
+.toggle-card.checked .tc-check{background:var(--gold);border-color:var(--gold);}
+.receipt{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:24px;max-width:420px;margin:20px auto 0;box-shadow:var(--shadow);}
+.receipt h4{font-size:1.3rem;text-align:center;margin-bottom:14px;color:var(--gold-dark);}
+.receipt-line{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--border);font-size:.95rem;}
+.receipt-total{display:flex;justify-content:space-between;padding-top:14px;margin-top:6px;font-size:1.25rem;font-family:'Cormorant Garamond',serif;color:var(--gold-dark);font-weight:600;}
+.receipt-note{font-size:.74rem;font-style:italic;color:var(--medium-gray);text-align:center;margin-top:12px;}
+.doc-viewer{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:24px 26px;max-height:360px;overflow-y:auto;margin-bottom:8px;font-size:.88rem;}
+.doc-viewer h3{font-size:1.4rem;text-align:center;margin-bottom:4px;letter-spacing:.5px;}
+.doc-viewer h4{font-size:1.05rem;margin:18px 0 6px;color:var(--gold-dark);}
+.doc-viewer p{margin-bottom:10px;}
+.doc-viewer ul{margin:6px 0 10px 22px;}
+.doc-viewer li{margin-bottom:5px;}
+.doc-viewer .doc-meta{text-align:center;color:var(--medium-gray);font-size:.8rem;margin-bottom:8px;}
+.doc-label{font-weight:500;letter-spacing:.5px;text-transform:uppercase;font-size:.8rem;color:var(--gold-dark);margin:26px 0 10px;}
+.check-row{display:flex;align-items:flex-start;gap:12px;background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:14px 0;cursor:pointer;}
+.check-row input{width:20px;height:20px;accent-color:var(--gold);margin-top:2px;flex-shrink:0;cursor:pointer;}
+.check-row label{cursor:pointer;font-size:.92rem;}
+.sig-box{border:1.5px solid var(--border);border-radius:8px;background:var(--white);position:relative;}
+#sigCanvas{display:block;width:100%;height:170px;border-radius:8px;touch-action:none;cursor:crosshair;}
+.sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#cfc8ba;font-style:italic;pointer-events:none;}
+.upload-field{border:2px dashed var(--border);border-radius:8px;padding:18px;text-align:center;background:var(--white);transition:border-color .2s ease;margin-bottom:6px;}
+.upload-field:hover{border-color:var(--gold-light);}
+.upload-field input[type=file]{display:none;}
+.upload-trigger{cursor:pointer;color:var(--gold-dark);font-size:.9rem;}
+.upload-preview{margin-top:12px;display:flex;align-items:center;gap:12px;justify-content:center;font-size:.85rem;}
+.upload-preview img{max-height:80px;border-radius:6px;border:1px solid var(--border);}
+.pdf-chip{background:var(--cream);border:1px solid var(--border);border-radius:6px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;}
+#confirmScreen{display:none;text-align:center;background:var(--warm-white);border:1px solid var(--border);border-radius:8px;padding:54px 30px;box-shadow:var(--shadow);}
+#confirmScreen .big-emoji{font-size:3.4rem;}
+#confirmScreen h2{font-size:2.1rem;margin:14px 0 6px;color:var(--gold-dark);}
+#confirmScreen .conf-id{font-size:1.3rem;font-family:'Cormorant Garamond',serif;color:var(--gold);letter-spacing:1px;margin:8px 0;}
+#confirmScreen p{color:var(--medium-gray);max-width:540px;margin:8px auto;}
+.help-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:#fff;border:none;font-size:1.6rem;cursor:pointer;box-shadow:var(--shadow-lg);z-index:50;transition:all .25s ease;font-family:'Cormorant Garamond',serif;}
+.help-fab:hover{background:var(--gold-dark);transform:scale(1.07);}
+.modal-overlay{position:fixed;inset:0;background:rgba(44,44,44,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-overlay.open{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal-box{background:var(--warm-white);border-radius:10px;max-width:480px;width:100%;padding:32px 30px;box-shadow:var(--shadow-lg);position:relative;animation:popIn .3s ease;max-height:85vh;overflow-y:auto;}
+@keyframes popIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.modal-box h3{font-size:1.6rem;color:var(--gold-dark);margin-bottom:14px;text-align:center;}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--medium-gray);}
+.help-list{list-style:none;}
+.help-list li{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;font-size:.92rem;}
+.help-list li:last-child{border-bottom:none;}
+.help-list .hi{font-size:1.2rem;}
 </style>
 </head>
 <body>
 <header class="site-header">
-  <div class="logo-text">Edgeless Beauty Group</div>
-  <div class="logo-sub">Lake House</div>
-  <hr class="gold-divider">
-  <div class="property-address">N53W34945 Road B, Okauchee, WI 53069 &nbsp;•&nbsp; Okauchee Lake</div>
+<div class="logo-text">Edgeless Beauty Group</div>
+<div class="logo-sub">Lake House</div>
+<hr class="gold-divider">
+<div class="property-address">N53W34945 Road B, Okauchee, WI 53069 &nbsp;•&nbsp; Okauchee Lake</div>
 </header>
-
 <div class="container page">
-
-  <!-- STEP INDICATOR -->
-  <div class="stepper" id="stepper">
-    <div class="stepper-progress" id="stepperProgress"></div>
-    <div class="step-node" data-step="1"><div class="step-dot">1</div><div class="step-label">Select Dates</div></div>
-    <div class="step-node" data-step="2"><div class="step-dot">2</div><div class="step-label">Your Info</div></div>
-    <div class="step-node" data-step="3"><div class="step-dot">3</div><div class="step-label">Guests &amp; Vehicles</div></div>
-    <div class="step-node" data-step="4"><div class="step-dot">4</div><div class="step-label">Amenities &amp; Pricing</div></div>
-    <div class="step-node" data-step="5"><div class="step-dot">5</div><div class="step-label">Agreement &amp; Submit</div></div>
-  </div>
-
-  <!-- ============ STEP 1 — DATES ============ -->
-  <section class="step-panel" data-panel="1">
-    <h2 class="step-title">Select Your Dates</h2>
-    <p class="step-intro">Choose your check-in and check-out dates. Minimum 1 night, maximum 3 nights. Check-in is at 4:00 PM and check-out is at 10:00 AM.</p>
-    <div class="cal-wrap">
-      <div class="cal-head">
-        <button class="cal-nav" id="prevMonth" aria-label="Previous month">‹</button>
-        <h3 id="calTitle">Month</h3>
-        <button class="cal-nav" id="nextMonth" aria-label="Next month">›</button>
-      </div>
-      <div class="cal-grid" id="calDow"></div>
-      <div class="cal-grid" id="calGrid" style="margin-top:5px;"></div>
-      <div class="cal-error" id="calError"></div>
-      <div class="cal-legend">
-        <span><i class="lg-swatch" style="background:var(--cream);border:1px solid var(--border);"></i>Available</span>
-        <span><i class="lg-swatch" style="background:var(--gold);"></i>Selected</span>
-        <span><i class="lg-swatch" style="background:var(--charcoal);"></i>Booked</span>
-        <span><i class="lg-swatch" style="background:var(--light-gray);"></i>Buffer</span>
-        <span><i class="lg-swatch" style="border:1.5px solid var(--gold);"></i>Today</span>
-      </div>
-    </div>
-    <div class="stay-summary" id="staySummary" style="display:none;">
-      <div><div class="lbl">Check-In</div><div class="val" id="sumCheckIn">—</div><div style="font-size:.75rem;color:var(--medium-gray)">4:00 PM</div></div>
-      <div><div class="lbl">Check-Out</div><div class="val" id="sumCheckOut">—</div><div style="font-size:.75rem;color:var(--medium-gray)">10:00 AM</div></div>
-      <div><div class="lbl">Nights</div><div class="val" id="sumNights">—</div></div>
-    </div>
-    <div class="nav-buttons">
-      <span></span>
-      <button class="btn btn-gold" data-next>Next →</button>
-    </div>
-  </section>
-
-  <!-- ============ STEP 2 — RENTER INFO ============ -->
-  <section class="step-panel" data-panel="2">
-    <h2 class="step-title">Your Information</h2>
-    <p class="step-intro">Tell us who will be the primary renter for this stay. All fields are required.</p>
-    <div class="form-grid">
-      <div class="field"><input type="text" id="firstName" placeholder=" " autocomplete="given-name"><label for="firstName">First Name</label><div class="err">Please enter your first name.</div></div>
-      <div class="field"><input type="text" id="lastName" placeholder=" " autocomplete="family-name"><label for="lastName">Last Name</label><div class="err">Please enter your last name.</div></div>
-      <div class="field full"><input type="email" id="email" placeholder=" " autocomplete="email"><label for="email">Company Email</label><div class="err">Please enter a valid corporate email address.</div></div>
-      <div class="field"><input type="text" id="department" placeholder=" "><label for="department">Department / Team</label><div class="err">Please enter your department or team.</div></div>
-      <div class="field"><input type="tel" id="phone" placeholder=" " autocomplete="tel"><label for="phone">Phone Number</label><div class="err">Please enter a valid phone number.</div></div>
-      <div class="field"><input type="text" id="ecName" placeholder=" "><label for="ecName">Emergency Contact Name</label><div class="err">Please enter an emergency contact name.</div></div>
-      <div class="field"><input type="tel" id="ecPhone" placeholder=" "><label for="ecPhone">Emergency Contact Phone</label><div class="err">Please enter a valid emergency contact phone.</div></div>
-    </div>
-    <div class="nav-buttons">
-      <button class="btn btn-ghost" data-back>← Back</button>
-      <button class="btn btn-gold" data-next>Next →</button>
-    </div>
-  </section>
-
-  <!-- ============ STEP 3 — GUESTS & VEHICLES ============ -->
-  <section class="step-panel" data-panel="3">
-    <h2 class="step-title">Guests &amp; Vehicles</h2>
-    <p class="step-intro">Add the people and vehicles coming with you.</p>
-
-    <div class="section-head">
-      <h3>Guests</h3>
-      <span class="counter-badge" id="guestCounter">1 / 7</span>
-    </div>
-    <p class="hint-note">You (the renter) count as 1 guest, so up to 6 additional guests can be added (7 total maximum).</p>
-    <div id="guestList"></div>
-    <div id="minorBanner" class="info-banner" style="display:none;">
-      <span>🦺</span><span>Wisconsin law requires guests under 16 to have their own properly fitted life jacket on or near the water. Please bring one per minor.</span>
-    </div>
-    <button class="btn btn-outline btn-sm" id="addGuest">Add Guest +</button>
-
-    <div class="section-divider"></div>
-
-    <div class="section-head">
-      <h3>Vehicles</h3>
-      <span class="counter-badge" id="vehicleCounter">0 / 3</span>
-    </div>
-    <p class="hint-note">Maximum 3 vehicles may be parked at the property.</p>
-    <div id="vehicleList"></div>
-    <button class="btn btn-outline btn-sm" id="addVehicle">Add Vehicle +</button>
-
-    <div class="nav-buttons">
-      <button class="btn btn-ghost" data-back>← Back</button>
-      <button class="btn btn-gold" data-next>Next →</button>
-    </div>
-  </section>
-
-  <!-- ============ STEP 4 — AMENITIES & PRICING ============ -->
-  <section class="step-panel" data-panel="4">
-    <h2 class="step-title">Amenities &amp; Pricing</h2>
-    <p class="step-intro">Request optional recreational equipment. Watercraft is subject to admin approval.</p>
-
-    <div class="doc-label">Recreational Equipment</div>
-    <div class="toggle-grid">
-      <div class="toggle-card" id="boatCard" data-amenity="boat">
-        <div class="tc-check">✓</div>
-        <div class="tc-icon">⚓</div>
-        <div class="tc-label">Boat Access</div>
-        <div class="tc-desc">Licensed operators only. Must have 50+ logged boating hours and a valid boating license. Subject to admin approval.</div>
-      </div>
-      <div class="toggle-card" id="waveCard" data-amenity="waveRunners">
-        <div class="tc-check">✓</div>
-        <div class="tc-icon">🌊</div>
-        <div class="tc-label">Wave Runner Access</div>
-        <div class="tc-desc">Licensed operators only. Subject to admin approval.</div>
-      </div>
-    </div>
-    <div class="info-banner" id="watercraftWarn" style="display:none;">
-      <span>⚠️</span><span>Boat / wave runner requests are subject to admin approval. You will be notified by email.</span>
-    </div>
-
-    <div class="receipt">
-      <h4>Pricing Summary</h4>
-      <div class="receipt-line"><span>Cleaning Fee <small style="color:var(--medium-gray)">(mandatory)</small></span><span>$300.00</span></div>
-      <div class="receipt-line" id="gasLine" style="display:none;"><span>Watercraft Gas Fee</span><span>$100.00</span></div>
-      <div class="receipt-total"><span>Total</span><span id="receiptTotal">$300.00</span></div>
-      <div class="receipt-note">Additional charges may apply for damages per the rental agreement.</div>
-    </div>
-
-    <div class="nav-buttons">
-      <button class="btn btn-ghost" data-back>← Back</button>
-      <button class="btn btn-gold" data-next>Next →</button>
-    </div>
-  </section>
-
-  <!-- ============ STEP 5 — AGREEMENT & SUBMIT ============ -->
-  <section class="step-panel" data-panel="5">
-    <h2 class="step-title">Agreement &amp; Submit</h2>
-    <p class="step-intro">Please review both documents, sign the liability agreement, and upload the required identification.</p>
-
-    <!-- AGREEMENT 1 -->
-    <div class="doc-label">Document 1 — Rental Liability Agreement</div>
-    <div class="doc-viewer" id="agreementViewer">
-      <h3>LAKE HOUSE RENTAL LIABILITY AGREEMENT</h3>
-      <p class="doc-meta">Edgeless Beauty Group &nbsp;•&nbsp; Okauchee Lake, Wisconsin</p>
-      <p>This Rental Liability Agreement is entered into by and between Edgeless Beauty Group ("Owner") and <strong id="agrRenterName">[RENTER NAME]</strong> ("Renter").</p>
-
-      <h4>1. Assumption of Risk</h4>
-      <ul>
-        <li>The Renter acknowledges that use of the Lake House, the lake, docks, watercraft, and all recreational equipment involves inherent and unavoidable risks, including but not limited to drowning, bodily injury, illness, and property damage.</li>
-        <li>The Renter voluntarily and knowingly assumes all such risks, both known and unknown, on behalf of themselves and every guest in their party.</li>
-        <li>The Renter affirms they and their guests are in good health and physically capable of the activities they choose to undertake.</li>
-      </ul>
-
-      <h4>2. Release and Waiver of Liability</h4>
-      <ul>
-        <li>The Renter hereby releases, waives, and discharges Edgeless Beauty Group and its owners, officers, employees, and agents from any and all liability for any loss, damage, injury, or death arising from use of the property or its amenities.</li>
-        <li>This release applies to the Renter, all guests, invitees, and minor children in the Renter's care.</li>
-        <li>This waiver is binding to the fullest extent permitted by Wisconsin law.</li>
-      </ul>
-
-      <h4>3. Rules of Conduct</h4>
-      <ul>
-        <li>Maximum occupancy and the three (3) vehicle limit must be observed at all times.</li>
-        <li>No smoking is permitted inside the residence. No parties, events, or commercial gatherings are allowed.</li>
-        <li>Quiet hours are observed from 10:00 PM to 7:00 AM in respect of neighbors.</li>
-        <li>The Renter is solely responsible for the conduct of every guest and invitee during the rental period.</li>
-      </ul>
-
-      <h4>4. Watercraft &amp; Recreational Equipment</h4>
-      <ul>
-        <li>Operation of the boat or wave runners requires a valid boating license and a minimum of fifty (50) logged hours of boating experience, and is subject to advance approval by the Owner.</li>
-        <li>Operating any watercraft under the influence of alcohol or drugs (OUI) is strictly prohibited and will result in immediate termination of the rental.</li>
-        <li>All occupants of any watercraft must wear a properly fitted, U.S. Coast Guard-approved life jacket as required by Wisconsin law.</li>
-      </ul>
-
-      <h4>5. Property Damage &amp; Indemnification</h4>
-      <ul>
-        <li>The Renter is financially responsible for any damage to the property, watercraft, furnishings, or equipment occurring during the rental period, normal wear excepted.</li>
-        <li>The Renter agrees to indemnify and hold harmless the Owner against all claims, demands, costs, and expenses (including reasonable attorney's fees) arising from the Renter's use of the property.</li>
-        <li>A mandatory cleaning fee of $300 applies to every stay. A watercraft gas fee of $100 applies when watercraft is requested.</li>
-      </ul>
-
-      <h4>6. Occupancy &amp; Guests</h4>
-      <ul>
-        <li>Only guests registered on this booking may occupy the property. Unregistered overnight guests are not permitted.</li>
-        <li>The Renter must ensure that all minors are supervised at all times when on or near the water.</li>
-        <li>Guests under the age of 16 must have their own properly fitted life jacket available.</li>
-      </ul>
-
-      <h4>7. Acknowledgment &amp; Governing Law</h4>
-      <ul>
-        <li>This Agreement is governed by and construed in accordance with the laws of the State of Wisconsin.</li>
-        <li>If any provision is held unenforceable, the remaining provisions shall continue in full force and effect.</li>
-        <li>By signing below, the Renter affirms they have read, understood, and voluntarily agree to all terms of this Agreement.</li>
-      </ul>
-    </div>
-
-    <div class="check-row" id="agreeRow">
-      <input type="checkbox" id="agreeChk">
-      <label for="agreeChk">I have read and agree to the Lake House Rental Liability Agreement.</label>
-    </div>
-    <div class="field invalid" id="agreeErrWrap" style="display:none;"><div class="err" style="display:block;">You must agree to the liability agreement to continue.</div></div>
-
-    <!-- SIGNATURE SECTION -->
-    <div class="doc-label">Signature</div>
-    <div class="form-grid">
-      <div class="field"><input type="text" id="sigName" placeholder=" "><label for="sigName">Full Name</label></div>
-      <div class="field"><input type="text" id="sigDept" placeholder=" "><label for="sigDept">Department / Team</label></div>
-      <div class="field"><input type="text" id="sigDate" placeholder=" " readonly><label for="sigDate">Date</label></div>
-      <div class="field"><input type="text" id="sigEcName" placeholder=" "><label for="sigEcName">Emergency Contact Name</label></div>
-      <div class="field full"><input type="text" id="sigEcPhone" placeholder=" "><label for="sigEcPhone">Emergency Contact Phone</label></div>
-    </div>
-    <div style="margin-top:14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:.82rem;color:var(--medium-gray);">Sign below (mouse or finger):</span>
-        <button class="btn btn-ghost btn-sm" id="clearSig" type="button">Clear Signature</button>
-      </div>
-      <div class="sig-box">
-        <canvas id="sigCanvas"></canvas>
-        <div class="sig-placeholder" id="sigPlaceholder">✍ Sign here</div>
-      </div>
-      <div class="field invalid" id="sigErrWrap" style="display:none;"><div class="err" style="display:block;">A signature is required to submit your booking.</div></div>
-    </div>
-
-    <div class="section-divider"></div>
-
-    <!-- AGREEMENT 2 — MANUAL -->
-    <div class="doc-label">Document 2 — Lake House Manual</div>
-    <div class="doc-viewer" id="manualViewer">
-      <h3>LAKE HOUSE MANUAL</h3>
-      <p class="doc-meta">Edgeless Beauty Group &nbsp;•&nbsp; N53W34945 Road B, Okauchee, WI 53069</p>
-
-      <h4>Welcome</h4>
-      <p>Welcome to the Edgeless Beauty Group Lake House on beautiful Okauchee Lake. We hope you enjoy a relaxing and rejuvenating stay. Please read this manual carefully — it contains everything you need for a safe and comfortable visit.</p>
-
-      <h4>Check-In &amp; Check-Out</h4>
-      <ul>
-        <li><strong>Check-In:</strong> 4:00 PM. A keyless entry code will be sent to you 24 hours before your arrival.</li>
-        <li><strong>Check-Out:</strong> 10:00 AM. Please complete the departure checklist before you leave.</li>
-      </ul>
-
-      <h4>House Rules</h4>
-      <ul>
-        <li>Maximum occupancy is 8 people.</li>
-        <li>No smoking anywhere inside the residence.</li>
-        <li>No parties or events of any kind.</li>
-        <li>Quiet hours are 10:00 PM – 7:00 AM.</li>
-        <li>Maximum of 3 cars on the property.</li>
-        <li>Please remove shoes inside and treat the home with care.</li>
-      </ul>
-
-      <h4>Okauchee Lake Rules</h4>
-      <ul>
-        <li>Observe all posted no-wake zones, especially within 100 feet of shore, piers, and swimmers.</li>
-        <li>Slow-no-wake hours apply from sunset to 10:00 AM.</li>
-        <li>Be courteous to neighboring properties and other lake users.</li>
-        <li>Do not disturb wildlife or shoreline vegetation.</li>
-      </ul>
-
-      <h4>Boat Use Requirements</h4>
-      <ul>
-        <li>Operators must have 50+ logged hours of boating experience.</li>
-        <li>A valid boating license is required and must be approved by the admin in advance.</li>
-        <li>Operating under the influence (OUI) is strictly prohibited.</li>
-        <li>Return the boat to the lift and connect the charger after every use.</li>
-      </ul>
-
-      <h4>Life Jacket Requirements</h4>
-      <ul>
-        <li>Wisconsin law requires a properly fitted, U.S. Coast Guard-approved life jacket for every person on board.</li>
-        <li>Children under 16 must wear a life jacket at all times on or near the water — please bring one per minor.</li>
-      </ul>
-
-      <h4>Emergency Contacts</h4>
-      <ul>
-        <li><strong>Emergency:</strong> 911</li>
-        <li><strong>Non-Emergency (Sheriff):</strong> 262-446-5070</li>
-        <li><strong>Property Manager — Susan Haise:</strong> 414-397-2882</li>
-        <li><strong>Wisconsin DNR:</strong> 1-800-943-0003</li>
-      </ul>
-
-      <h4>Local Restaurants</h4>
-      <ul>
-        <li><strong>The Golden Mast Inn</strong> — Lakeside German &amp; American, Okauchee Lake</li>
-        <li><strong>Weissgerber's Seven Seas</strong> — Seafood &amp; steaks on Nagawicka Lake, Hartland</li>
-        <li><strong>Knuckleheads Pub &amp; Grill</strong> — Casual lakeside fare, Okauchee</li>
-        <li><strong>Stonewood Ale House</strong> — Craft beer &amp; pub food, Oconomowoc</li>
-        <li><strong>The Beach House</strong> — Waterfront American dining, Oconomowoc Lake</li>
-        <li><strong>Ginza of Tokyo</strong> — Japanese &amp; sushi, Delafield</li>
-        <li><strong>Ferrante's Signature Cuisine</strong> — Italian, Delafield</li>
-      </ul>
-
-      <h4>Fishing Guide</h4>
-      <ul>
-        <li>Okauchee Lake is home to musky, walleye, largemouth bass, northern pike, and panfish.</li>
-        <li>A valid Wisconsin fishing license is required for anyone 16 and older (available at <em>gowild.wi.gov</em>).</li>
-        <li>Observe all DNR size and bag limits. Please practice catch-and-release for musky.</li>
-        <li>Rinse and stow any borrowed fishing gear after use.</li>
-      </ul>
-
-      <h4>Departure Checklist</h4>
-      <ul>
-        <li>Start the dishwasher and dispose of all trash in the bins outside.</li>
-        <li>Turn off all lights and set the thermostat to 65°F (winter) / 75°F (summer).</li>
-        <li>Close and lock all windows and doors.</li>
-        <li>Return the boat and any watercraft to their lifts and connect chargers.</li>
-        <li>Take all personal belongings — check closets and drawers.</li>
-        <li>Report any damage to Susan Haise at 414-397-2882.</li>
-      </ul>
-    </div>
-
-    <div class="check-row" id="manualRow">
-      <input type="checkbox" id="manualChk">
-      <label for="manualChk">I have read and agree to the Lake House Manual and all house rules.</label>
-    </div>
-    <div class="field invalid" id="manualErrWrap" style="display:none;"><div class="err" style="display:block;">You must acknowledge the Lake House Manual to continue.</div></div>
-
-    <div class="section-divider"></div>
-
-    <!-- UPLOADS -->
-    <div class="doc-label">Required Documents</div>
-    <div style="margin-bottom:18px;">
-      <p style="font-size:.88rem;margin-bottom:8px;">Driver's License <span style="color:var(--danger)">*</span></p>
-      <div class="upload-field">
-        <label class="upload-trigger" for="dlUpload">📎 Click to upload an image or PDF of your driver's license</label>
-        <input type="file" id="dlUpload" accept="image/*,application/pdf">
-        <div class="upload-preview" id="dlPreview"></div>
-      </div>
-      <div class="field invalid" id="dlErrWrap" style="display:none;"><div class="err" style="display:block;">A driver's license is required.</div></div>
-    </div>
-    <div>
-      <p style="font-size:.88rem;margin-bottom:8px;" id="blLabel">Boating License <span style="color:var(--medium-gray)">(required if using watercraft)</span></p>
-      <div class="upload-field">
-        <label class="upload-trigger" for="blUpload">📎 Click to upload an image or PDF of your boating license</label>
-        <input type="file" id="blUpload" accept="image/*,application/pdf">
-        <div class="upload-preview" id="blPreview"></div>
-      </div>
-      <div class="field invalid" id="blErrWrap" style="display:none;"><div class="err" style="display:block;">A boating license is required because you requested watercraft.</div></div>
-    </div>
-
-    <div class="nav-buttons">
-      <button class="btn btn-ghost" data-back>← Back</button>
-      <button class="btn btn-gold btn-lg" id="submitBooking">Submit Booking Request</button>
-    </div>
-  </section>
-
-  <!-- CONFIRMATION -->
-  <section id="confirmScreen">
-    <div class="big-emoji">🎉</div>
-    <h2>Your booking request has been submitted!</h2>
-    <div class="conf-id" id="confId">EBG-XXXX</div>
-    <p id="confMsg"></p>
-    <p style="margin-top:18px;"><button class="btn btn-outline" id="newBooking">Start a New Booking</button></p>
-  </section>
-
+<div class="stepper" id="stepper">
+<div class="stepper-progress" id="stepperProgress"></div>
+<div class="step-node" data-step="1"><div class="step-dot">1</div><div class="step-label">Select Dates</div></div>
+<div class="step-node" data-step="2"><div class="step-dot">2</div><div class="step-label">Your Info</div></div>
+<div class="step-node" data-step="3"><div class="step-dot">3</div><div class="step-label">Guests &amp; Vehicles</div></div>
+<div class="step-node" data-step="4"><div class="step-dot">4</div><div class="step-label">Amenities &amp; Pricing</div></div>
+<div class="step-node" data-step="5"><div class="step-dot">5</div><div class="step-label">Agreement &amp; Submit</div></div>
 </div>
 
-<!-- HELP FAB -->
-<button class="help-fab" id="helpFab" aria-label="Help">?</button>
+<section class="step-panel" data-panel="1">
+<h2 class="step-title">Select Your Dates</h2>
+<p class="step-intro">Choose your check-in and check-out dates. Minimum 1 night, maximum 3 nights. Check-in is at 4:00 PM and check-out is at 10:00 AM.</p>
+<div class="cal-wrap">
+<div class="cal-head">
+<button class="cal-nav" id="prevMonth">‹</button>
+<h3 id="calTitle">Month</h3>
+<button class="cal-nav" id="nextMonth">›</button>
+</div>
+<div class="cal-grid" id="calDow"></div>
+<div class="cal-grid" id="calGrid" style="margin-top:5px;"></div>
+<div class="cal-error" id="calError"></div>
+<div class="cal-legend">
+<span><i class="lg-swatch" style="background:var(--cream);border:1px solid var(--border);"></i>Available</span>
+<span><i class="lg-swatch" style="background:var(--gold);"></i>Selected</span>
+<span><i class="lg-swatch" style="background:var(--charcoal);"></i>Booked</span>
+<span><i class="lg-swatch" style="background:var(--light-gray);"></i>Buffer</span>
+<span><i class="lg-swatch" style="border:1.5px solid var(--gold);"></i>Today</span>
+</div>
+</div>
+<div class="stay-summary" id="staySummary" style="display:none;">
+<div><div class="lbl">Check-In</div><div class="val" id="sumCheckIn">—</div><div style="font-size:.75rem;color:var(--medium-gray)">4:00 PM</div></div>
+<div><div class="lbl">Check-Out</div><div class="val" id="sumCheckOut">—</div><div style="font-size:.75rem;color:var(--medium-gray)">10:00 AM</div></div>
+<div><div class="lbl">Nights</div><div class="val" id="sumNights">—</div></div>
+</div>
+<div class="nav-buttons"><span></span><button class="btn btn-gold" data-next>Next →</button></div>
+</section>
+
+<section class="step-panel" data-panel="2">
+<h2 class="step-title">Your Information</h2>
+<p class="step-intro">Tell us who will be the primary renter for this stay. All fields are required.</p>
+<div class="form-grid">
+<div class="field"><input type="text" id="firstName" placeholder=" " autocomplete="given-name"><label for="firstName">First Name</label><div class="err">Please enter your first name.</div></div>
+<div class="field"><input type="text" id="lastName" placeholder=" " autocomplete="family-name"><label for="lastName">Last Name</label><div class="err">Please enter your last name.</div></div>
+<div class="field full"><input type="email" id="email" placeholder=" " autocomplete="email"><label for="email">Company Email</label><div class="err">Please enter a valid corporate email address.</div></div>
+<div class="field"><input type="text" id="department" placeholder=" "><label for="department">Department / Team</label><div class="err">Please enter your department or team.</div></div>
+<div class="field"><input type="tel" id="phone" placeholder=" " autocomplete="tel"><label for="phone">Phone Number</label><div class="err">Please enter a valid phone number.</div></div>
+<div class="field"><input type="text" id="ecName" placeholder=" "><label for="ecName">Emergency Contact Name</label><div class="err">Please enter an emergency contact name.</div></div>
+<div class="field"><input type="tel" id="ecPhone" placeholder=" "><label for="ecPhone">Emergency Contact Phone</label><div class="err">Please enter a valid emergency contact phone.</div></div>
+</div>
+<div class="nav-buttons"><button class="btn btn-ghost" data-back>← Back</button><button class="btn btn-gold" data-next>Next →</button></div>
+</section>
+
+<section class="step-panel" data-panel="3">
+<h2 class="step-title">Guests &amp; Vehicles</h2>
+<p class="step-intro">Add the people and vehicles coming with you.</p>
+<div class="section-head"><h3>Guests</h3><span class="counter-badge" id="guestCounter">1 / 7</span></div>
+<p class="hint-note">You (the renter) count as 1 guest, so up to 6 additional guests can be added (7 total maximum).</p>
+<div id="guestList"></div>
+<div id="minorBanner" class="info-banner" style="display:none;"><span>🦺</span><span>Wisconsin law requires guests under 16 to have their own properly fitted life jacket on or near the water. Please bring one per minor.</span></div>
+<button class="btn btn-outline btn-sm" id="addGuest">Add Guest +</button>
+<div class="section-divider"></div>
+<div class="section-head"><h3>Vehicles</h3><span class="counter-badge" id="vehicleCounter">0 / 3</span></div>
+<p class="hint-note">Maximum 3 vehicles may be parked at the property.</p>
+<div id="vehicleList"></div>
+<button class="btn btn-outline btn-sm" id="addVehicle">Add Vehicle +</button>
+<div class="nav-buttons"><button class="btn btn-ghost" data-back>← Back</button><button class="btn btn-gold" data-next>Next →</button></div>
+</section>
+
+<section class="step-panel" data-panel="4">
+<h2 class="step-title">Amenities &amp; Pricing</h2>
+<p class="step-intro">Request optional recreational equipment. Watercraft is subject to admin approval.</p>
+<div class="doc-label">Recreational Equipment</div>
+<div class="toggle-grid">
+<div class="toggle-card" id="boatCard" data-amenity="boat"><div class="tc-check">✓</div><div class="tc-icon">⚓</div><div class="tc-label">Boat Access</div><div class="tc-desc">Licensed operators only. Must have 50+ logged boating hours and a valid boating license. Subject to admin approval.</div></div>
+<div class="toggle-card" id="waveCard" data-amenity="waveRunners"><div class="tc-check">✓</div><div class="tc-icon">🌊</div><div class="tc-label">Wave Runner Access</div><div class="tc-desc">Licensed operators only. Subject to admin approval.</div></div>
+</div>
+<div class="info-banner" id="watercraftWarn" style="display:none;"><span>⚠️</span><span>Boat / wave runner requests are subject to admin approval. You will be notified by email.</span></div>
+<div class="receipt">
+<h4>Pricing Summary</h4>
+<div class="receipt-line"><span>Cleaning Fee <small style="color:var(--medium-gray)">(mandatory)</small></span><span>$300.00</span></div>
+<div class="receipt-line" id="gasLine" style="display:none;"><span>Watercraft Gas Fee</span><span>$100.00</span></div>
+<div class="receipt-total"><span>Total</span><span id="receiptTotal">$300.00</span></div>
+<div class="receipt-note">Additional charges may apply for damages per the rental agreement.</div>
+</div>
+<div class="nav-buttons"><button class="btn btn-ghost" data-back>← Back</button><button class="btn btn-gold" data-next>Next →</button></div>
+</section>
+
+<section class="step-panel" data-panel="5">
+<h2 class="step-title">Agreement &amp; Submit</h2>
+<p class="step-intro">Please review both documents, sign the liability agreement, and upload the required identification.</p>
+<div class="doc-label">Document 1 — Rental Liability Agreement</div>
+<div class="doc-viewer" id="agreementViewer">
+<h3>LAKE HOUSE RENTAL LIABILITY AGREEMENT</h3>
+<p class="doc-meta">Edgeless Beauty Group &nbsp;•&nbsp; Okauchee Lake, Wisconsin</p>
+<p>This Rental Liability Agreement is entered into by and between Edgeless Beauty Group ("Owner") and <strong id="agrRenterName">[RENTER NAME]</strong> ("Renter").</p>
+<h4>1. Assumption of Risk</h4><ul>
+<li>The Renter acknowledges that use of the Lake House, the lake, docks, watercraft, and all recreational equipment involves inherent and unavoidable risks, including but not limited to drowning, bodily injury, illness, and property damage.</li>
+<li>The Renter voluntarily and knowingly assumes all such risks, both known and unknown, on behalf of themselves and every guest in their party.</li>
+<li>The Renter affirms they and their guests are in good health and physically capable of the activities they choose to undertake.</li></ul>
+<h4>2. Release and Waiver of Liability</h4><ul>
+<li>The Renter hereby releases, waives, and discharges Edgeless Beauty Group and its owners, officers, employees, and agents from any and all liability for any loss, damage, injury, or death arising from use of the property or its amenities.</li>
+<li>This release applies to the Renter, all guests, invitees, and minor children in the Renter's care.</li>
+<li>This waiver is binding to the fullest extent permitted by Wisconsin law.</li></ul>
+<h4>3. Rules of Conduct</h4><ul>
+<li>Maximum occupancy and the three (3) vehicle limit must be observed at all times.</li>
+<li>No smoking is permitted inside the residence. No parties, events, or commercial gatherings are allowed.</li>
+<li>Quiet hours are observed from 10:00 PM to 7:00 AM in respect of neighbors.</li>
+<li>The Renter is solely responsible for the conduct of every guest and invitee during the rental period.</li></ul>
+<h4>4. Watercraft &amp; Recreational Equipment</h4><ul>
+<li>Operation of the boat or wave runners requires a valid boating license and a minimum of fifty (50) logged hours of boating experience, and is subject to advance approval by the Owner.</li>
+<li>Operating any watercraft under the influence of alcohol or drugs (OUI) is strictly prohibited and will result in immediate termination of the rental.</li>
+<li>All occupants of any watercraft must wear a properly fitted, U.S. Coast Guard-approved life jacket as required by Wisconsin law.</li></ul>
+<h4>5. Property Damage &amp; Indemnification</h4><ul>
+<li>The Renter is financially responsible for any damage to the property, watercraft, furnishings, or equipment occurring during the rental period, normal wear excepted.</li>
+<li>The Renter agrees to indemnify and hold harmless the Owner against all claims, demands, costs, and expenses (including reasonable attorney's fees) arising from the Renter's use of the property.</li>
+<li>A mandatory cleaning fee of $300 applies to every stay. A watercraft gas fee of $100 applies when watercraft is requested.</li></ul>
+<h4>6. Occupancy &amp; Guests</h4><ul>
+<li>Only guests registered on this booking may occupy the property. Unregistered overnight guests are not permitted.</li>
+<li>The Renter must ensure that all minors are supervised at all times when on or near the water.</li>
+<li>Guests under the age of 16 must have their own properly fitted life jacket available.</li></ul>
+<h4>7. Acknowledgment &amp; Governing Law</h4><ul>
+<li>This Agreement is governed by and construed in accordance with the laws of the State of Wisconsin.</li>
+<li>If any provision is held unenforceable, the remaining provisions shall continue in full force and effect.</li>
+<li>By signing below, the Renter affirms they have read, understood, and voluntarily agree to all terms of this Agreement.</li></ul>
+</div>
+<div class="check-row" id="agreeRow"><input type="checkbox" id="agreeChk"><label for="agreeChk">I have read and agree to the Lake House Rental Liability Agreement.</label></div>
+<div class="field invalid" id="agreeErrWrap" style="display:none;"><div class="err" style="display:block;">You must agree to the liability agreement to continue.</div></div>
+<div class="doc-label">Signature</div>
+<div class="form-grid">
+<div class="field"><input type="text" id="sigName" placeholder=" "><label for="sigName">Full Name</label></div>
+<div class="field"><input type="text" id="sigDept" placeholder=" "><label for="sigDept">Department / Team</label></div>
+<div class="field"><input type="text" id="sigDate" placeholder=" " readonly><label for="sigDate">Date</label></div>
+<div class="field"><input type="text" id="sigEcName" placeholder=" "><label for="sigEcName">Emergency Contact Name</label></div>
+<div class="field full"><input type="text" id="sigEcPhone" placeholder=" "><label for="sigEcPhone">Emergency Contact Phone</label></div>
+</div>
+<div style="margin-top:14px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+<span style="font-size:.82rem;color:var(--medium-gray);">Sign below (mouse or finger):</span>
+<button class="btn btn-ghost btn-sm" id="clearSig" type="button">Clear Signature</button>
+</div>
+<div class="sig-box"><canvas id="sigCanvas"></canvas><div class="sig-placeholder" id="sigPlaceholder">✍ Sign here</div></div>
+<div class="field invalid" id="sigErrWrap" style="display:none;"><div class="err" style="display:block;">A signature is required to submit your booking.</div></div>
+</div>
+<div class="section-divider"></div>
+<div class="doc-label">Document 2 — Lake House Manual</div>
+<div class="doc-viewer" id="manualViewer">
+<h3>LAKE HOUSE MANUAL</h3>
+<p class="doc-meta">Edgeless Beauty Group &nbsp;•&nbsp; N53W34945 Road B, Okauchee, WI 53069</p>
+<h4>Welcome</h4><p>Welcome to the Edgeless Beauty Group Lake House on beautiful Okauchee Lake. We hope you enjoy a relaxing and rejuvenating stay. Please read this manual carefully — it contains everything you need for a safe and comfortable visit.</p>
+<h4>Check-In &amp; Check-Out</h4><ul><li><strong>Check-In:</strong> 4:00 PM. A keyless entry code will be sent to you 24 hours before your arrival.</li><li><strong>Check-Out:</strong> 10:00 AM. Please complete the departure checklist before you leave.</li></ul>
+<h4>House Rules</h4><ul><li>Maximum occupancy is 8 people.</li><li>No smoking anywhere inside the residence.</li><li>No parties or events of any kind.</li><li>Quiet hours are 10:00 PM – 7:00 AM.</li><li>Maximum of 3 cars on the property.</li><li>Please remove shoes inside and treat the home with care.</li></ul>
+<h4>Okauchee Lake Rules</h4><ul><li>Observe all posted no-wake zones, especially within 100 feet of shore, piers, and swimmers.</li><li>Slow-no-wake hours apply from sunset to 10:00 AM.</li><li>Be courteous to neighboring properties and other lake users.</li><li>Do not disturb wildlife or shoreline vegetation.</li></ul>
+<h4>Boat Use Requirements</h4><ul><li>Operators must have 50+ logged hours of boating experience.</li><li>A valid boating license is required and must be approved by the admin in advance.</li><li>Operating under the influence (OUI) is strictly prohibited.</li><li>Return the boat to the lift and connect the charger after every use.</li></ul>
+<h4>Life Jacket Requirements</h4><ul><li>Wisconsin law requires a properly fitted, U.S. Coast Guard-approved life jacket for every person on board.</li><li>Children under 16 must wear a life jacket at all times on or near the water — please bring one per minor.</li></ul>
+<h4>Emergency Contacts</h4><ul><li><strong>Emergency:</strong> 911</li><li><strong>Non-Emergency (Sheriff):</strong> 262-446-5070</li><li><strong>Property Manager — Susan Haise:</strong> 414-397-2882</li><li><strong>Wisconsin DNR:</strong> 1-800-943-0003</li></ul>
+<h4>Local Restaurants</h4><ul><li><strong>The Golden Mast Inn</strong> — Lakeside German &amp; American, Okauchee Lake</li><li><strong>Weissgerber's Seven Seas</strong> — Seafood &amp; steaks on Nagawicka Lake, Hartland</li><li><strong>Knuckleheads Pub &amp; Grill</strong> — Casual lakeside fare, Okauchee</li><li><strong>Stonewood Ale House</strong> — Craft beer &amp; pub food, Oconomowoc</li><li><strong>The Beach House</strong> — Waterfront American dining, Oconomowoc Lake</li><li><strong>Ginza of Tokyo</strong> — Japanese &amp; sushi, Delafield</li><li><strong>Ferrante's Signature Cuisine</strong> — Italian, Delafield</li></ul>
+<h4>Fishing Guide</h4><ul><li>Okauchee Lake is home to musky, walleye, largemouth bass, northern pike, and panfish.</li><li>A valid Wisconsin fishing license is required for anyone 16 and older (available at <em>gowild.wi.gov</em>).</li><li>Observe all DNR size and bag limits. Please practice catch-and-release for musky.</li><li>Rinse and stow any borrowed fishing gear after use.</li></ul>
+<h4>Departure Checklist</h4><ul><li>Start the dishwasher and dispose of all trash in the bins outside.</li><li>Turn off all lights and set the thermostat to 65°F (winter) / 75°F (summer).</li><li>Close and lock all windows and doors.</li><li>Return the boat and any watercraft to their lifts and connect chargers.</li><li>Take all personal belongings — check closets and drawers.</li><li>Report any damage to Susan Haise at 414-397-2882.</li></ul>
+</div>
+<div class="check-row" id="manualRow"><input type="checkbox" id="manualChk"><label for="manualChk">I have read and agree to the Lake House Manual and all house rules.</label></div>
+<div class="field invalid" id="manualErrWrap" style="display:none;"><div class="err" style="display:block;">You must acknowledge the Lake House Manual to continue.</div></div>
+<div class="section-divider"></div>
+<div class="doc-label">Required Documents</div>
+<div style="margin-bottom:18px;">
+<p style="font-size:.88rem;margin-bottom:8px;">Driver's License <span style="color:var(--danger)">*</span></p>
+<div class="upload-field"><label class="upload-trigger" for="dlUpload">📎 Click to upload an image or PDF of your driver's license</label><input type="file" id="dlUpload" accept="image/*,application/pdf"><div class="upload-preview" id="dlPreview"></div></div>
+<div class="field invalid" id="dlErrWrap" style="display:none;"><div class="err" style="display:block;">A driver's license is required.</div></div>
+</div>
+<div>
+<p style="font-size:.88rem;margin-bottom:8px;" id="blLabel">Boating License <span style="color:var(--medium-gray)">(required if using watercraft)</span></p>
+<div class="upload-field"><label class="upload-trigger" for="blUpload">📎 Click to upload an image or PDF of your boating license</label><input type="file" id="blUpload" accept="image/*,application/pdf"><div class="upload-preview" id="blPreview"></div></div>
+<div class="field invalid" id="blErrWrap" style="display:none;"><div class="err" style="display:block;">A boating license is required because you requested watercraft.</div></div>
+</div>
+<div class="nav-buttons"><button class="btn btn-ghost" data-back>← Back</button><button class="btn btn-gold btn-lg" id="submitBooking">Submit Booking Request</button></div>
+</section>
+
+<section id="confirmScreen">
+<div class="big-emoji">🎉</div>
+<h2>Your booking request has been submitted!</h2>
+<div class="conf-id" id="confId">EBG-XXXX</div>
+<p id="confMsg"></p>
+<p style="margin-top:18px;"><button class="btn btn-outline" id="newBooking">Start a New Booking</button></p>
+</section>
+</div>
+
+<button class="help-fab" id="helpFab">?</button>
 <div class="modal-overlay" id="helpModal">
-  <div class="modal-box">
-    <button class="modal-close" data-close-help>×</button>
-    <h3>Quick Info</h3>
-    <ul class="help-list">
-      <li><span class="hi">🌙</span><span>Maximum stay is <strong>3 nights</strong>.</span></li>
-      <li><span class="hi">🔑</span><span>Check-in <strong>4:00 PM</strong> &nbsp;•&nbsp; Check-out <strong>10:00 AM</strong></span></li>
-      <li><span class="hi">🧹</span><span><strong>$300 cleaning fee</strong> is mandatory on every stay.</span></li>
-      <li><span class="hi">⚓</span><span>Boat &amp; wave runners are <strong>subject to admin approval</strong>.</span></li>
-      <li><span class="hi">📞</span><span>Questions? Contact <strong>Susan Haise — 414-397-2882</strong></span></li>
-    </ul>
-  </div>
+<div class="modal-box">
+<button class="modal-close" data-close-help>×</button>
+<h3>Quick Info</h3>
+<ul class="help-list">
+<li><span class="hi">🌙</span><span>Maximum stay is <strong>3 nights</strong>.</span></li>
+<li><span class="hi">🔑</span><span>Check-in <strong>4:00 PM</strong> &nbsp;•&nbsp; Check-out <strong>10:00 AM</strong></span></li>
+<li><span class="hi">🧹</span><span><strong>$300 cleaning fee</strong> is mandatory on every stay.</span></li>
+<li><span class="hi">⚓</span><span>Boat &amp; wave runners are <strong>subject to admin approval</strong>.</span></li>
+<li><span class="hi">📞</span><span>Questions? Contact <strong>Susan Haise — 414-397-2882</strong></span></li>
+</ul>
+</div>
 </div>
 
 <script>
-/* ============================================================
-   EBG LAKE HOUSE — BOOKING APP
-   Vanilla JS. All persistence via localStorage.
-   ============================================================ */
 (function(){
-  "use strict";
+"use strict";
+var LS_BOOKINGS="ebg_bookings";
+var LS_BLOCKED="ebg_blocked_dates";
 
-  /* ---------- localStorage helpers ---------- */
-  var LS_BOOKINGS = "ebg_bookings";
-  var LS_BLOCKED  = "ebg_blocked_dates";
-  function getBookings(){ if(window.EBGStore) return EBGStore.getBookings(); try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS)) || []; }catch(e){ return []; } }
-  function saveBookings(b){ if(window.EBGStore) return EBGStore.saveBookings(b); try{ localStorage.setItem(LS_BOOKINGS, JSON.stringify(b)); return true; }catch(e){ return false; } }
-  function getBlocked(){ if(window.EBGStore) return EBGStore.getBlocked(); try{ return JSON.parse(localStorage.getItem(LS_BLOCKED)) || []; }catch(e){ return []; } }
+function getBookings(){ if(window.EBGStore) return EBGStore.getBookings(); try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS))||[]; }catch(e){ return []; } }
+function getBlocked(){ if(window.EBGStore) return EBGStore.getBlocked(); try{ return JSON.parse(localStorage.getItem(LS_BLOCKED))||[]; }catch(e){ return []; } }
 
-  /* ---------- date helpers ---------- */
-  function toISO(d){
-    var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
-    return y+"-"+m+"-"+day;
-  }
-  function parseISO(s){ var p=s.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
-  function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
-  function todayISO(){ return toISO(new Date()); }
-  function prettyDate(iso){
-    if(!iso) return "—";
-    var d=parseISO(iso);
-    return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-  }
-  function nightsBetween(a,b){ return Math.round((parseISO(b)-parseISO(a))/86400000); }
-
-  /* ---------- app state ---------- */
-  var now = new Date();
-  var state = {
-    step:1,
-    checkIn:null, checkOut:null, pickPhase:0, /* 0 = pick start, 1 = pick end */
-    calY:now.getFullYear(), calM:now.getMonth(),
-    guests:[], vehicles:[],
-    amenities:{boat:false, waveRunners:false},
-    documents:{driversLicense:null, boatingLicense:null},
-    signature:null, sigHasInk:false
-  };
-  var gid=0, vid=0;
-
-  /* ============================================================
-     UNAVAILABLE-DATE COMPUTATION (re-read storage every render)
-     ============================================================ */
-  function buildStatusMap(){
-    var map={}; // iso -> 'booked'|'buffer'|'blocked'
-    var bookings=getBookings();
-    bookings.forEach(function(bk){
-      if(bk.status==="approved" || bk.status==="pending"){
-        var d=parseISO(bk.checkIn), end=parseISO(bk.checkOut);
-        while(d<=end){ map[toISO(d)]="booked"; d=addDays(d,1); }
-      }
-      if(bk.status==="approved"){
-        var bb=toISO(addDays(parseISO(bk.checkIn),-1));
-        var ba=toISO(addDays(parseISO(bk.checkOut),1));
-        if(!map[bb]) map[bb]="buffer";
-        if(!map[ba]) map[ba]="buffer";
-      }
-    });
-    getBlocked().forEach(function(x){
-      var iso=x.date;
-      if(map[iso]==="booked") return;
-      var isBuffer = x.reason && /buffer/i.test(x.reason);
-      map[iso] = isBuffer ? "buffer" : "blocked";
-    });
-    return map;
-  }
-
-  /* ============================================================
-     CALENDAR
-     ============================================================ */
-  var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-  function renderDow(){
-    var el=document.getElementById("calDow");
-    el.innerHTML = DOW.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join("");
-  }
-
-  function renderCalendar(){
-    var statusMap = buildStatusMap();   // re-read each render (req #5)
-    var grid=document.getElementById("calGrid");
-    document.getElementById("calTitle").textContent = MONTHS[state.calM]+" "+state.calY;
-    var first=new Date(state.calY,state.calM,1);
-    var startDow=first.getDay();
-    var daysInMonth=new Date(state.calY,state.calM+1,0).getDate();
-    var tIso=todayISO();
-    var html="";
-    for(var i=0;i<startDow;i++){ html+='<div class="cal-cell empty"></div>'; }
-    for(var day=1;day<=daysInMonth;day++){
-      var d=new Date(state.calY,state.calM,day);
-      var iso=toISO(d);
-      var cls="cal-cell", clickable=false;
-      var st=statusMap[iso];
-      if(iso < tIso){ cls+=" past"; }
-      else if(st==="booked"){ cls+=" booked"; }
-      else if(st==="blocked"){ cls+=" blocked"; }
-      else if(st==="buffer"){ cls+=" buffer"; }
-      else { cls+=" available"; clickable=true; }
-      if(iso===tIso) cls+=" today";
-      // selection highlight
-      if(state.checkIn && state.checkOut){
-        if(iso>=state.checkIn && iso<=state.checkOut){
-          cls = cls.replace("available","");
-          cls += (iso===state.checkIn||iso===state.checkOut) ? " selected" : " range";
-        }
-      } else if(state.checkIn && iso===state.checkIn){
-        cls += " selected";
-      }
-      html+='<div class="'+cls+'" data-iso="'+iso+'"'+(clickable?' data-click="1"':'')+'>'+day+'</div>';
-    }
-    grid.innerHTML=html;
-  }
-
-  function onDateClick(iso){
-    var err=document.getElementById("calError");
-    err.textContent="";
-    // start a new selection
-    if(state.pickPhase===0 || (state.checkIn && state.checkOut)){
-      state.checkIn=iso; state.checkOut=null; state.pickPhase=1;
-      renderCalendar(); updateStaySummary();
-      return;
-    }
-    // picking end
-    if(iso===state.checkIn){
-      err.textContent="Minimum stay is 1 night — please pick a later check-out date.";
-      return;
-    }
-    if(iso<state.checkIn){ // restart from earlier date
-      state.checkIn=iso; renderCalendar(); updateStaySummary(); return;
-    }
-    var n=nightsBetween(state.checkIn,iso);
-    if(n>3){
-      err.textContent="Maximum stay is 3 nights. Please choose a closer check-out date.";
-      state.checkIn=iso; state.checkOut=null; renderCalendar(); updateStaySummary(); return;
-    }
-    // ensure nothing unavailable inside the range (inclusive)
-    var statusMap=buildStatusMap();
-    var d=parseISO(state.checkIn), end=parseISO(iso), conflict=false;
-    while(d<=end){
-      var di=toISO(d);
-      if(statusMap[di]==="booked"||statusMap[di]==="blocked"||statusMap[di]==="buffer"||di<todayISO()){ conflict=true; break; }
-      d=addDays(d,1);
-    }
-    if(conflict){
-      err.textContent="Your selected range overlaps an unavailable date. Please choose different dates.";
-      state.checkIn=iso; state.checkOut=null; state.pickPhase=1; renderCalendar(); updateStaySummary(); return;
-    }
-    state.checkOut=iso; state.pickPhase=0;
-    renderCalendar(); updateStaySummary();
-  }
-
-  function updateStaySummary(){
-    var box=document.getElementById("staySummary");
-    if(state.checkIn && state.checkOut){
-      document.getElementById("sumCheckIn").textContent=prettyDate(state.checkIn);
-      document.getElementById("sumCheckOut").textContent=prettyDate(state.checkOut);
-      var n=nightsBetween(state.checkIn,state.checkOut);
-      document.getElementById("sumNights").textContent=n+(n===1?" night":" nights");
-      box.style.display="flex";
-    } else {
-      box.style.display="none";
-    }
-  }
-
-  document.getElementById("prevMonth").addEventListener("click",function(){
-    state.calM--; if(state.calM<0){state.calM=11;state.calY--;} renderCalendar();
-  });
-  document.getElementById("nextMonth").addEventListener("click",function(){
-    state.calM++; if(state.calM>11){state.calM=0;state.calY++;} renderCalendar();
-  });
-  document.getElementById("calGrid").addEventListener("click",function(e){
-    var cell=e.target.closest(".cal-cell");
-    if(cell && cell.getAttribute("data-click")==="1"){ onDateClick(cell.getAttribute("data-iso")); }
-  });
-  // keep calendar fresh if admin changes things in another tab
-  window.addEventListener("storage",function(e){
-    if(e.key===LS_BLOCKED || e.key===LS_BOOKINGS){ renderCalendar(); }
-  });
-
-  /* ============================================================
-     STEP NAVIGATION
-     ============================================================ */
-  function showStep(n){
-    state.step=n;
-    document.querySelectorAll(".step-panel").forEach(function(p){
-      p.classList.toggle("active", +p.getAttribute("data-panel")===n);
-    });
-    // stepper nodes
-    document.querySelectorAll(".step-node").forEach(function(node){
-      var s=+node.getAttribute("data-step");
-      node.classList.toggle("active", s===n);
-      node.classList.toggle("done", s<n);
-    });
-    document.getElementById("stepperProgress").style.width = ((n-1)/4*84)+"%";
-    window.scrollTo({top:0,behavior:"smooth"});
-    if(n===5){ syncStep5Prefill(); resizeSigCanvas(); }
-  }
-
-  function validateStep(n){
-    if(n===1){
-      var err=document.getElementById("calError");
-      if(!state.checkIn || !state.checkOut){ err.textContent="Please select your check-in and check-out dates."; return false; }
-      return true;
-    }
-    if(n===2){ return validateRenter(); }
-    if(n===3){ return validateGuestsVehicles(); }
-    if(n===4){ return true; }
-    return true;
-  }
-
-  document.querySelectorAll("[data-next]").forEach(function(b){
-    b.addEventListener("click",function(){ if(validateStep(state.step)) showStep(state.step+1); });
-  });
-  document.querySelectorAll("[data-back]").forEach(function(b){
-    b.addEventListener("click",function(){ showStep(state.step-1); });
-  });
-
-  /* ============================================================
-     STEP 2 — RENTER VALIDATION (floating labels handled via CSS)
-     ============================================================ */
-  var FREE_DOMAINS=["gmail.com","yahoo.com","hotmail.com","outlook.com","aol.com","icloud.com","live.com","msn.com"];
-  function setFieldError(id, show){
-    var f=document.getElementById(id).closest(".field");
-    f.classList.toggle("invalid", !!show);
-  }
-  function validEmail(v){
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return false;
-    var dom=v.split("@")[1].toLowerCase();
-    return FREE_DOMAINS.indexOf(dom)===-1;
-  }
-  function validatePhone(v){ return v.replace(/[^\d]/g,"").length>=10; }
-
-  function validateRenter(){
-    var ok=true;
-    var fn=document.getElementById("firstName").value.trim();
-    var ln=document.getElementById("lastName").value.trim();
-    var em=document.getElementById("email").value.trim();
-    var dep=document.getElementById("department").value.trim();
-    var ph=document.getElementById("phone").value.trim();
-    var en=document.getElementById("ecName").value.trim();
-    var ep=document.getElementById("ecPhone").value.trim();
-    if(!fn){ setFieldError("firstName",true); ok=false; } else setFieldError("firstName",false);
-    if(!ln){ setFieldError("lastName",true); ok=false; } else setFieldError("lastName",false);
-    if(!validEmail(em)){ setFieldError("email",true); ok=false; } else setFieldError("email",false);
-    if(!dep){ setFieldError("department",true); ok=false; } else setFieldError("department",false);
-    if(!validatePhone(ph)){ setFieldError("phone",true); ok=false; } else setFieldError("phone",false);
-    if(!en){ setFieldError("ecName",true); ok=false; } else setFieldError("ecName",false);
-    if(!validatePhone(ep)){ setFieldError("ecPhone",true); ok=false; } else setFieldError("ecPhone",false);
-    if(ok){
-      state.renter={firstName:fn,lastName:ln,email:em,department:dep,phone:ph,emergencyContactName:en,emergencyContactPhone:ep};
-    }
-    return ok;
-  }
-  // live clear of errors
-  ["firstName","lastName","email","department","phone","ecName","ecPhone"].forEach(function(id){
-    document.getElementById(id).addEventListener("input",function(){ setFieldError(id,false); });
-  });
-
-  /* ============================================================
-     STEP 3 — GUESTS & VEHICLES
-     ============================================================ */
-  var MAX_GUESTS=7, MAX_VEHICLES=3;
-  function renderGuests(){
-    var list=document.getElementById("guestList");
-    list.innerHTML="";
-    state.guests.forEach(function(g){
-      var card=document.createElement("div");
-      card.className="item-card"; card.setAttribute("data-gid",g.id);
-      card.innerHTML=
-        '<button class="remove-x" title="Remove guest">×</button>'+
-        '<div class="item-grid">'+
-          '<div class="field"><input type="text" placeholder=" " value="'+esc(g.firstName)+'" data-f="firstName"><label>First Name</label></div>'+
-          '<div class="field"><input type="text" placeholder=" " value="'+esc(g.lastName)+'" data-f="lastName"><label>Last Name</label></div>'+
-          '<div class="field"><select data-f="type">'+
-            '<option value="adult"'+(g.type==="adult"?" selected":"")+'>Adult</option>'+
-            '<option value="child"'+(g.type==="child"?" selected":"")+'>Child (age 2–18)</option>'+
-            '<option value="infant"'+(g.type==="infant"?" selected":"")+'>Infant</option>'+
-          '</select><label class="'+ (g.type? "":"") +'">Guest Type</label></div>'+
-        '</div>';
-      list.appendChild(card);
-      // bind
-      card.querySelector(".remove-x").addEventListener("click",function(){ removeGuest(g.id, card); });
-      card.querySelectorAll("[data-f]").forEach(function(inp){
-        markSelectFilled(inp);
-        inp.addEventListener("input",function(){ g[inp.getAttribute("data-f")]=inp.value; updateMinorBanner(); });
-        inp.addEventListener("change",function(){ g[inp.getAttribute("data-f")]=inp.value; markSelectFilled(inp); updateMinorBanner(); });
-      });
-    });
-    updateGuestCounter(); updateMinorBanner();
-  }
-  function markSelectFilled(inp){ if(inp.tagName==="SELECT"){ inp.classList.toggle("filled", !!inp.value); } }
-  function updateGuestCounter(){
-    var used=1+state.guests.length;
-    document.getElementById("guestCounter").textContent=used+" / "+MAX_GUESTS;
-    document.getElementById("addGuest").disabled = used>=MAX_GUESTS;
-  }
-  function updateMinorBanner(){
-    var minor=state.guests.some(function(g){ return g.type==="child"||g.type==="infant"; });
-    document.getElementById("minorBanner").style.display = minor?"flex":"none";
-  }
-  function removeGuest(id, card){
-    card.classList.add("removing");
-    setTimeout(function(){
-      state.guests=state.guests.filter(function(g){return g.id!==id;});
-      renderGuests();
-    },280);
-  }
-  document.getElementById("addGuest").addEventListener("click",function(){
-    if(1+state.guests.length>=MAX_GUESTS) return;
-    state.guests.push({id:++gid,firstName:"",lastName:"",type:"adult"});
-    renderGuests();
-  });
-
-  function renderVehicles(){
-    var list=document.getElementById("vehicleList");
-    list.innerHTML="";
-    state.vehicles.forEach(function(v){
-      var card=document.createElement("div");
-      card.className="item-card"; card.setAttribute("data-vid",v.id);
-      card.innerHTML=
-        '<button class="remove-x" title="Remove vehicle">×</button>'+
-        '<div class="item-grid">'+
-          '<div class="field"><input type="text" placeholder=" " value="'+esc(v.color)+'" data-f="color"><label>Color</label></div>'+
-          '<div class="field"><input type="text" placeholder=" " value="'+esc(v.make)+'" data-f="make"><label>Make / Model</label></div>'+
-          '<div class="field"><input type="text" placeholder=" " value="'+esc(v.licensePlate)+'" data-f="licensePlate"><label>License Plate</label></div>'+
-        '</div>';
-      list.appendChild(card);
-      card.querySelector(".remove-x").addEventListener("click",function(){ removeVehicle(v.id, card); });
-      card.querySelectorAll("[data-f]").forEach(function(inp){
-        inp.addEventListener("input",function(){ v[inp.getAttribute("data-f")]=inp.value; });
-      });
-    });
-    updateVehicleCounter();
-  }
-  function updateVehicleCounter(){
-    document.getElementById("vehicleCounter").textContent=state.vehicles.length+" / "+MAX_VEHICLES;
-    document.getElementById("addVehicle").disabled = state.vehicles.length>=MAX_VEHICLES;
-  }
-  function removeVehicle(id, card){
-    card.classList.add("removing");
-    setTimeout(function(){
-      state.vehicles=state.vehicles.filter(function(v){return v.id!==id;});
-      renderVehicles();
-    },280);
-  }
-  document.getElementById("addVehicle").addEventListener("click",function(){
-    if(state.vehicles.length>=MAX_VEHICLES) return;
-    state.vehicles.push({id:++vid,color:"",make:"",licensePlate:""});
-    renderVehicles();
-  });
-
-  function validateGuestsVehicles(){
-    // require complete fields on any added card
-    for(var i=0;i<state.guests.length;i++){
-      var g=state.guests[i];
-      if(!g.firstName.trim()||!g.lastName.trim()||!g.type){
-        alertInline("Please complete all guest fields, or remove empty guest cards."); return false;
-      }
-    }
-    for(var j=0;j<state.vehicles.length;j++){
-      var v=state.vehicles[j];
-      if(!v.color.trim()||!v.make.trim()||!v.licensePlate.trim()){
-        alertInline("Please complete all vehicle fields, or remove empty vehicle cards."); return false;
-      }
-    }
-    return true;
-  }
-  // tiny inline message helper for step 3 (uses the hint area)
-  function alertInline(msg){
-    var ex=document.getElementById("gv-inline");
-    if(!ex){
-      ex=document.createElement("div"); ex.id="gv-inline"; ex.className="info-banner";
-      ex.style.borderColor="var(--danger)"; ex.style.background="rgba(160,68,42,.10)"; ex.style.color="var(--danger)";
-      document.querySelector('[data-panel="3"] .nav-buttons').insertAdjacentElement("beforebegin",ex);
-    }
-    ex.innerHTML='<span>⚠️</span><span>'+esc(msg)+'</span>';
-    ex.style.display="flex";
-    setTimeout(function(){ if(ex) ex.style.display="none"; },4000);
-  }
-
-  /* ============================================================
-     STEP 4 — AMENITIES & PRICING
-     ============================================================ */
-  function toggleAmenity(key, card){
-    state.amenities[key]=!state.amenities[key];
-    card.classList.toggle("checked", state.amenities[key]);
-    updatePricing();
-  }
-  document.getElementById("boatCard").addEventListener("click",function(){ toggleAmenity("boat",this); });
-  document.getElementById("waveCard").addEventListener("click",function(){ toggleAmenity("waveRunners",this); });
-
-  function watercraftSelected(){ return state.amenities.boat || state.amenities.waveRunners; }
-  function updatePricing(){
-    var wc=watercraftSelected();
-    document.getElementById("gasLine").style.display = wc?"flex":"none";
-    document.getElementById("watercraftWarn").style.display = wc?"flex":"none";
-    var total=300+(wc?100:0);
-    document.getElementById("receiptTotal").textContent="$"+total.toFixed(2);
-    // update boating license label/requirement
-    document.getElementById("blLabel").innerHTML = wc
-      ? 'Boating License <span style="color:var(--danger)">*</span>'
-      : 'Boating License <span style="color:var(--medium-gray)">(required if using watercraft)</span>';
-  }
-
-  /* ============================================================
-     STEP 5 — PREFILL, SIGNATURE, UPLOADS
-     ============================================================ */
-  function syncStep5Prefill(){
-    var r=state.renter||{};
-    var full=((r.firstName||"")+" "+(r.lastName||"")).trim();
-    document.getElementById("agrRenterName").textContent = full || "[RENTER NAME]";
-    setVal("sigName", full);
-    setVal("sigDept", r.department||"");
-    setVal("sigEcName", r.emergencyContactName||"");
-    setVal("sigEcPhone", r.emergencyContactPhone||"");
-    var d=new Date();
-    setVal("sigDate", d.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}));
-    updatePricing();
-  }
-  function setVal(id,v){ var el=document.getElementById(id); el.value=v; }
-
-  // ---- signature canvas (mouse + touch via pointer events) ----
-  var canvas=document.getElementById("sigCanvas"), ctx=canvas.getContext("2d");
-  var drawing=false, lastX=0, lastY=0;
-  function resizeSigCanvas(){
-    var ratio=window.devicePixelRatio||1;
-    var w=canvas.clientWidth, h=canvas.clientHeight;
-    // preserve existing drawing
-    var prev=state.sigHasInk ? canvas.toDataURL() : null;
-    canvas.width=w*ratio; canvas.height=h*ratio;
-    ctx.setTransform(ratio,0,0,ratio,0,0);
-    ctx.lineWidth=2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#2C2C2C";
-    if(prev){ var img=new Image(); img.onload=function(){ ctx.drawImage(img,0,0,w,h); }; img.src=prev; }
-  }
-  function getPos(e){
-    var rect=canvas.getBoundingClientRect();
-    var cx = e.touches? e.touches[0].clientX : e.clientX;
-    var cy = e.touches? e.touches[0].clientY : e.clientY;
-    return {x:cx-rect.left, y:cy-rect.top};
-  }
-  function startDraw(e){
-    e.preventDefault(); drawing=true;
-    var p=getPos(e); lastX=p.x; lastY=p.y;
-    document.getElementById("sigPlaceholder").style.display="none";
-  }
-  function moveDraw(e){
-    if(!drawing) return; e.preventDefault();
-    var p=getPos(e);
-    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke();
-    lastX=p.x; lastY=p.y; state.sigHasInk=true;
-    document.getElementById("sigErrWrap").style.display="none";
-  }
-  function endDraw(){ drawing=false; }
-  canvas.addEventListener("pointerdown",startDraw);
-  canvas.addEventListener("pointermove",moveDraw);
-  window.addEventListener("pointerup",endDraw);
-  canvas.addEventListener("touchstart",startDraw,{passive:false});
-  canvas.addEventListener("touchmove",moveDraw,{passive:false});
-  canvas.addEventListener("touchend",endDraw);
-  window.addEventListener("resize",function(){ if(state.step===5) resizeSigCanvas(); });
-  document.getElementById("clearSig").addEventListener("click",function(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    state.sigHasInk=false;
-    document.getElementById("sigPlaceholder").style.display="block";
-  });
-
-  // clear agreement/manual errors on check
-  document.getElementById("agreeChk").addEventListener("change",function(){ if(this.checked) document.getElementById("agreeErrWrap").style.display="none"; });
-  document.getElementById("manualChk").addEventListener("change",function(){ if(this.checked) document.getElementById("manualErrWrap").style.display="none"; });
-
-  // ---- uploads ----
-  // localStorage caps at ~5MB per origin, so a raw phone photo of a license
-  // would blow the quota and make saving fail. We downscale images to a JPEG
-  // (~100-300KB) before storing, and cap PDFs so the booking record stays small.
-  var MAX_PDF_BYTES = 2.5*1024*1024;
-  function compressImage(file, maxDim, quality, cb){
-    var reader=new FileReader();
-    reader.onload=function(){
-      var img=new Image();
-      img.onload=function(){
-        var scale=Math.min(1, maxDim/Math.max(img.width,img.height));
-        var cw=Math.max(1,Math.round(img.width*scale)), ch=Math.max(1,Math.round(img.height*scale));
-        var c=document.createElement("canvas"); c.width=cw; c.height=ch;
-        c.getContext("2d").drawImage(img,0,0,cw,ch);
-        try{ cb(c.toDataURL("image/jpeg", quality)); }catch(e){ cb(reader.result); }
-      };
-      img.onerror=function(){ cb(reader.result); }; // unreadable -> fall back to original
-      img.src=reader.result;
-    };
-    reader.onerror=function(){ cb(null); };
-    reader.readAsDataURL(file);
-  }
-  function handleUpload(inputId, previewId, slot, errWrapId){
-    var input=document.getElementById(inputId);
-    input.addEventListener("change",function(){
-      var file=input.files[0];
-      var prev=document.getElementById(previewId);
-      if(!file){ state.documents[slot]=null; prev.innerHTML=""; return; }
-      if(errWrapId) document.getElementById(errWrapId).style.display="none";
-      if(file.type.indexOf("image/")===0){
-        prev.innerHTML='<span style="color:var(--medium-gray)">Processing image…</span>';
-        compressImage(file, 1200, 0.7, function(dataUrl){
-          if(!dataUrl){ state.documents[slot]=null; prev.innerHTML='<span style="color:var(--danger)">Could not read that image. Please try another file.</span>'; return; }
-          state.documents[slot]={name:file.name, type:"image/jpeg", data:dataUrl};
-          prev.innerHTML='<img src="'+dataUrl+'" alt="preview"><span>'+esc(file.name)+'</span>';
-        });
-      } else if(file.type==="application/pdf"){
-        if(file.size>MAX_PDF_BYTES){
-          state.documents[slot]=null;
-          prev.innerHTML='<span style="color:var(--danger)">This PDF is '+(file.size/1048576).toFixed(1)+' MB — too large to store. Please upload a photo instead, or a PDF under 2.5 MB.</span>';
-          return;
-        }
-        var reader=new FileReader();
-        reader.onload=function(){
-          state.documents[slot]={name:file.name, type:file.type, data:reader.result};
-          prev.innerHTML='<span class="pdf-chip">📄 '+esc(file.name)+'</span>';
-        };
-        reader.readAsDataURL(file);
-      } else {
-        state.documents[slot]=null;
-        prev.innerHTML='<span style="color:var(--danger)">Unsupported file type. Please upload an image or PDF.</span>';
-      }
-    });
-  }
-  handleUpload("dlUpload","dlPreview","driversLicense","dlErrWrap");
-  handleUpload("blUpload","blPreview","boatingLicense","blErrWrap");
-
-  /* ============================================================
-     SUBMIT
-     ============================================================ */
-  document.getElementById("submitBooking").addEventListener("click",async function(){
-    // re-validate earlier steps minimally
-    if(!state.checkIn||!state.checkOut){ showStep(1); document.getElementById("calError").textContent="Please select your dates."; return; }
-    if(!state.renter || !state.renter.email){ showStep(2); validateRenter(); return; }
-
-    var ok=true, firstBad=null;
-    // agreement 1
-    if(!document.getElementById("agreeChk").checked){ document.getElementById("agreeErrWrap").style.display="block"; ok=false; firstBad=firstBad||"agreeErrWrap"; }
-    // signature
-    if(!state.sigHasInk){ document.getElementById("sigErrWrap").style.display="block"; ok=false; firstBad=firstBad||"sigErrWrap"; }
-    // manual
-    if(!document.getElementById("manualChk").checked){ document.getElementById("manualErrWrap").style.display="block"; ok=false; firstBad=firstBad||"manualErrWrap"; }
-    // drivers license
-    if(!state.documents.driversLicense){ document.getElementById("dlErrWrap").style.display="block"; ok=false; firstBad=firstBad||"dlErrWrap"; }
-    // boating license if watercraft
-    if(watercraftSelected() && !state.documents.boatingLicense){ document.getElementById("blErrWrap").style.display="block"; ok=false; firstBad=firstBad||"blErrWrap"; }
-
-    if(!ok){
-      if(firstBad){ document.getElementById(firstBad).scrollIntoView({behavior:"smooth",block:"center"}); }
-      return;
-    }
-
-    // capture signature edits to name/dept/emergency back into record
-    var r=state.renter;
-    var id="EBG-"+Date.now();
-    var wc=watercraftSelected();
-    var booking={
-      id:id,
-      status:"pending",
-      submittedAt:new Date().toISOString(),
-      checkIn:state.checkIn,
-      checkOut:state.checkOut,
-      nights:nightsBetween(state.checkIn,state.checkOut),
-      renter:{
-        firstName:r.firstName, lastName:r.lastName, email:r.email,
-        department:document.getElementById("sigDept").value.trim()||r.department,
-        phone:r.phone,
-        emergencyContactName:document.getElementById("sigEcName").value.trim()||r.emergencyContactName,
-        emergencyContactPhone:document.getElementById("sigEcPhone").value.trim()||r.emergencyContactPhone
-      },
-      guests:state.guests.map(function(g){return {firstName:g.firstName,lastName:g.lastName,type:g.type};}),
-      vehicles:state.vehicles.map(function(v){return {color:v.color,make:v.make,licensePlate:v.licensePlate};}),
-      amenities:{boat:state.amenities.boat,waveRunners:state.amenities.waveRunners},
-      pricing:{cleaningFee:300,watercraftGas:wc?100:0,total:300+(wc?100:0)},
-      documents:{
-        driversLicense:state.documents.driversLicense,
-        boatingLicense:state.documents.boatingLicense||null
-      },
-      signature:canvas.toDataURL("image/png"),
-      agreementAcknowledged:true,
-      manualAcknowledged:true,
-      adminNotes:"",
-      rejectionReason:""
-    };
-
+// KEY CHANGE: booking page now calls EBGStore.saveBooking() for a single-append
+// instead of overwriting the whole list. Falls back to localStorage if no store.
+function saveNewBooking(booking){
+  if(window.EBGStore) return EBGStore.saveBooking(booking);
+  try{
     var all=getBookings(); all.push(booking);
-    var saved = await saveBookings(all);
-    if(!saved){
-      showSubmitError("We couldn't save your booking. If you're connected to Microsoft 365, the connection may have dropped (see the status tag at the bottom-left); otherwise your browser storage may be full from large files. Please try again, or contact Susan Haise at 414-397-2882.");
-      return;
-    }
+    localStorage.setItem(LS_BOOKINGS, JSON.stringify(all));
+    return Promise.resolve(true);
+  }catch(e){ return Promise.resolve(false); }
+}
 
-    // confirmation
-    document.getElementById("confId").textContent=id;
-    document.getElementById("confMsg").innerHTML=
-      'Admin will review your request and contact you at <strong>'+esc(r.email)+'</strong>. '+
-      'Check-in is at <strong>4:00 PM</strong> and check-out is at <strong>10:00 AM</strong>.';
-    document.querySelectorAll(".step-panel").forEach(function(p){p.classList.remove("active");});
-    document.getElementById("stepper").style.display="none";
-    document.getElementById("confirmScreen").style.display="block";
-    window.scrollTo({top:0,behavior:"smooth"});
+function toISO(d){ var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return y+"-"+m+"-"+day; }
+function parseISO(s){ var p=s.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function todayISO(){ return toISO(new Date()); }
+function prettyDate(iso){ if(!iso) return "—"; var d=parseISO(iso); return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}); }
+function nightsBetween(a,b){ return Math.round((parseISO(b)-parseISO(a))/86400000); }
+
+var now=new Date();
+var state={ step:1, checkIn:null, checkOut:null, pickPhase:0, calY:now.getFullYear(), calM:now.getMonth(), guests:[], vehicles:[], amenities:{boat:false,waveRunners:false}, documents:{driversLicense:null,boatingLicense:null}, signature:null, sigHasInk:false };
+var gid=0, vid=0;
+
+function buildStatusMap(){
+  var map={};
+  getBookings().forEach(function(bk){
+    if(bk.status==="approved"||bk.status==="pending"){
+      var d=parseISO(bk.checkIn),end=parseISO(bk.checkOut);
+      while(d<=end){ map[toISO(d)]="booked"; d=addDays(d,1); }
+    }
+    if(bk.status==="approved"){
+      var bb=toISO(addDays(parseISO(bk.checkIn),-1));
+      var ba=toISO(addDays(parseISO(bk.checkOut),1));
+      if(!map[bb]) map[bb]="buffer";
+      if(!map[ba]) map[ba]="buffer";
+    }
   });
+  getBlocked().forEach(function(x){
+    if(map[x.date]==="booked") return;
+    var isBuffer=x.reason&&/buffer/i.test(x.reason);
+    map[x.date]=isBuffer?"buffer":"blocked";
+  });
+  return map;
+}
 
-  function showSubmitError(msg){
-    var el=document.getElementById("submitErr");
-    if(!el){
-      el=document.createElement("div"); el.id="submitErr"; el.className="info-banner";
-      el.style.borderColor="var(--danger)"; el.style.background="rgba(160,68,42,.10)"; el.style.color="var(--danger)";
-      var nav=document.querySelector('[data-panel="5"] .nav-buttons');
-      nav.parentNode.insertBefore(el, nav);
-    }
-    var detail = (window.EBGStore && EBGStore.lastErrorText && EBGStore.lastErrorText())
-      ? ('<br><small style="opacity:.85;word-break:break-word">Technical details: '+esc(EBGStore.lastErrorText())+'</small>') : "";
-    el.innerHTML='<span>⚠️</span><span>'+esc(msg)+detail+'</span>';
-    el.style.display="flex";
-    el.scrollIntoView({behavior:"smooth",block:"center"});
+var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function renderDow(){ document.getElementById("calDow").innerHTML=DOW.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join(""); }
+
+function renderCalendar(){
+  var statusMap=buildStatusMap();
+  var grid=document.getElementById("calGrid");
+  document.getElementById("calTitle").textContent=MONTHS[state.calM]+" "+state.calY;
+  var first=new Date(state.calY,state.calM,1),startDow=first.getDay(),daysInMonth=new Date(state.calY,state.calM+1,0).getDate(),tIso=todayISO();
+  var html="";
+  for(var i=0;i<startDow;i++) html+='<div class="cal-cell empty"></div>';
+  for(var day=1;day<=daysInMonth;day++){
+    var d=new Date(state.calY,state.calM,day),iso=toISO(d),cls="cal-cell",clickable=false,st=statusMap[iso];
+    if(iso<tIso){ cls+=" past"; }
+    else if(st==="booked"){ cls+=" booked"; }
+    else if(st==="blocked"){ cls+=" blocked"; }
+    else if(st==="buffer"){ cls+=" buffer"; }
+    else{ cls+=" available"; clickable=true; }
+    if(iso===tIso) cls+=" today";
+    if(state.checkIn&&state.checkOut){
+      if(iso>=state.checkIn&&iso<=state.checkOut){ cls=cls.replace("available",""); cls+=(iso===state.checkIn||iso===state.checkOut)?" selected":" range"; }
+    } else if(state.checkIn&&iso===state.checkIn){ cls+=" selected"; }
+    html+='<div class="'+cls+'" data-iso="'+iso+'"'+(clickable?' data-click="1"':'')+'>'+day+'</div>';
+  }
+  grid.innerHTML=html;
+}
+
+function onDateClick(iso){
+  var err=document.getElementById("calError"); err.textContent="";
+  if(state.pickPhase===0||(state.checkIn&&state.checkOut)){ state.checkIn=iso; state.checkOut=null; state.pickPhase=1; renderCalendar(); updateStaySummary(); return; }
+  if(iso===state.checkIn){ err.textContent="Minimum stay is 1 night — please pick a later check-out date."; return; }
+  if(iso<state.checkIn){ state.checkIn=iso; renderCalendar(); updateStaySummary(); return; }
+  var n=nightsBetween(state.checkIn,iso);
+  if(n>3){ err.textContent="Maximum stay is 3 nights. Please choose a closer check-out date."; state.checkIn=iso; state.checkOut=null; renderCalendar(); updateStaySummary(); return; }
+  var statusMap=buildStatusMap(),d=parseISO(state.checkIn),end=parseISO(iso),conflict=false;
+  while(d<=end){ var di=toISO(d); if(statusMap[di]==="booked"||statusMap[di]==="blocked"||statusMap[di]==="buffer"||di<todayISO()){ conflict=true; break; } d=addDays(d,1); }
+  if(conflict){ err.textContent="Your selected range overlaps an unavailable date. Please choose different dates."; state.checkIn=iso; state.checkOut=null; state.pickPhase=1; renderCalendar(); updateStaySummary(); return; }
+  state.checkOut=iso; state.pickPhase=0; renderCalendar(); updateStaySummary();
+}
+
+function updateStaySummary(){
+  var box=document.getElementById("staySummary");
+  if(state.checkIn&&state.checkOut){
+    document.getElementById("sumCheckIn").textContent=prettyDate(state.checkIn);
+    document.getElementById("sumCheckOut").textContent=prettyDate(state.checkOut);
+    var n=nightsBetween(state.checkIn,state.checkOut);
+    document.getElementById("sumNights").textContent=n+(n===1?" night":" nights");
+    box.style.display="flex";
+  } else { box.style.display="none"; }
+}
+
+document.getElementById("prevMonth").addEventListener("click",function(){ state.calM--; if(state.calM<0){state.calM=11;state.calY--;} renderCalendar(); });
+document.getElementById("nextMonth").addEventListener("click",function(){ state.calM++; if(state.calM>11){state.calM=0;state.calY++;} renderCalendar(); });
+document.getElementById("calGrid").addEventListener("click",function(e){ var cell=e.target.closest(".cal-cell"); if(cell&&cell.getAttribute("data-click")==="1"){ onDateClick(cell.getAttribute("data-iso")); } });
+window.addEventListener("storage",function(e){ if(e.key===LS_BLOCKED||e.key===LS_BOOKINGS){ renderCalendar(); } });
+
+function showStep(n){
+  state.step=n;
+  document.querySelectorAll(".step-panel").forEach(function(p){ p.classList.toggle("active",+p.getAttribute("data-panel")===n); });
+  document.querySelectorAll(".step-node").forEach(function(node){ var s=+node.getAttribute("data-step"); node.classList.toggle("active",s===n); node.classList.toggle("done",s<n); });
+  document.getElementById("stepperProgress").style.width=((n-1)/4*84)+"%";
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(n===5){ syncStep5Prefill(); resizeSigCanvas(); }
+}
+
+function validateStep(n){
+  if(n===1){ var err=document.getElementById("calError"); if(!state.checkIn||!state.checkOut){ err.textContent="Please select your check-in and check-out dates."; return false; } return true; }
+  if(n===2){ return validateRenter(); }
+  if(n===3){ return validateGuestsVehicles(); }
+  return true;
+}
+
+document.querySelectorAll("[data-next]").forEach(function(b){ b.addEventListener("click",function(){ if(validateStep(state.step)) showStep(state.step+1); }); });
+document.querySelectorAll("[data-back]").forEach(function(b){ b.addEventListener("click",function(){ showStep(state.step-1); }); });
+
+var FREE_DOMAINS=["gmail.com","yahoo.com","hotmail.com","outlook.com","aol.com","icloud.com","live.com","msn.com"];
+function setFieldError(id,show){ var f=document.getElementById(id).closest(".field"); f.classList.toggle("invalid",!!show); }
+function validEmail(v){ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return false; var dom=v.split("@")[1].toLowerCase(); return FREE_DOMAINS.indexOf(dom)===-1; }
+function validatePhone(v){ return v.replace(/[^\d]/g,"").length>=10; }
+function validateRenter(){
+  var ok=true;
+  var fn=document.getElementById("firstName").value.trim(),ln=document.getElementById("lastName").value.trim(),em=document.getElementById("email").value.trim(),dep=document.getElementById("department").value.trim(),ph=document.getElementById("phone").value.trim(),en=document.getElementById("ecName").value.trim(),ep=document.getElementById("ecPhone").value.trim();
+  if(!fn){ setFieldError("firstName",true); ok=false; } else setFieldError("firstName",false);
+  if(!ln){ setFieldError("lastName",true); ok=false; } else setFieldError("lastName",false);
+  if(!validEmail(em)){ setFieldError("email",true); ok=false; } else setFieldError("email",false);
+  if(!dep){ setFieldError("department",true); ok=false; } else setFieldError("department",false);
+  if(!validatePhone(ph)){ setFieldError("phone",true); ok=false; } else setFieldError("phone",false);
+  if(!en){ setFieldError("ecName",true); ok=false; } else setFieldError("ecName",false);
+  if(!validatePhone(ep)){ setFieldError("ecPhone",true); ok=false; } else setFieldError("ecPhone",false);
+  if(ok){ state.renter={firstName:fn,lastName:ln,email:em,department:dep,phone:ph,emergencyContactName:en,emergencyContactPhone:ep}; }
+  return ok;
+}
+["firstName","lastName","email","department","phone","ecName","ecPhone"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ setFieldError(id,false); }); });
+
+var MAX_GUESTS=7,MAX_VEHICLES=3;
+function renderGuests(){
+  var list=document.getElementById("guestList"); list.innerHTML="";
+  state.guests.forEach(function(g){
+    var card=document.createElement("div"); card.className="item-card"; card.setAttribute("data-gid",g.id);
+    card.innerHTML='<button class="remove-x" title="Remove guest">×</button><div class="item-grid"><div class="field"><input type="text" placeholder=" " value="'+esc(g.firstName)+'" data-f="firstName"><label>First Name</label></div><div class="field"><input type="text" placeholder=" " value="'+esc(g.lastName)+'" data-f="lastName"><label>Last Name</label></div><div class="field"><select data-f="type"><option value="adult"'+(g.type==="adult"?" selected":"")+'>Adult</option><option value="child"'+(g.type==="child"?" selected":"")+'>Child (age 2–18)</option><option value="infant"'+(g.type==="infant"?" selected":"")+'>Infant</option></select><label>Guest Type</label></div></div>';
+    list.appendChild(card);
+    card.querySelector(".remove-x").addEventListener("click",function(){ removeGuest(g.id,card); });
+    card.querySelectorAll("[data-f]").forEach(function(inp){ markSelectFilled(inp); inp.addEventListener("input",function(){ g[inp.getAttribute("data-f")]=inp.value; updateMinorBanner(); }); inp.addEventListener("change",function(){ g[inp.getAttribute("data-f")]=inp.value; markSelectFilled(inp); updateMinorBanner(); }); });
+  });
+  updateGuestCounter(); updateMinorBanner();
+}
+function markSelectFilled(inp){ if(inp.tagName==="SELECT"){ inp.classList.toggle("filled",!!inp.value); } }
+function updateGuestCounter(){ var used=1+state.guests.length; document.getElementById("guestCounter").textContent=used+" / "+MAX_GUESTS; document.getElementById("addGuest").disabled=used>=MAX_GUESTS; }
+function updateMinorBanner(){ var minor=state.guests.some(function(g){ return g.type==="child"||g.type==="infant"; }); document.getElementById("minorBanner").style.display=minor?"flex":"none"; }
+function removeGuest(id,card){ card.classList.add("removing"); setTimeout(function(){ state.guests=state.guests.filter(function(g){return g.id!==id;}); renderGuests(); },280); }
+document.getElementById("addGuest").addEventListener("click",function(){ if(1+state.guests.length>=MAX_GUESTS) return; state.guests.push({id:++gid,firstName:"",lastName:"",type:"adult"}); renderGuests(); });
+
+function renderVehicles(){
+  var list=document.getElementById("vehicleList"); list.innerHTML="";
+  state.vehicles.forEach(function(v){
+    var card=document.createElement("div"); card.className="item-card"; card.setAttribute("data-vid",v.id);
+    card.innerHTML='<button class="remove-x" title="Remove vehicle">×</button><div class="item-grid"><div class="field"><input type="text" placeholder=" " value="'+esc(v.color)+'" data-f="color"><label>Color</label></div><div class="field"><input type="text" placeholder=" " value="'+esc(v.make)+'" data-f="make"><label>Make / Model</label></div><div class="field"><input type="text" placeholder=" " value="'+esc(v.licensePlate)+'" data-f="licensePlate"><label>License Plate</label></div></div>';
+    list.appendChild(card);
+    card.querySelector(".remove-x").addEventListener("click",function(){ removeVehicle(v.id,card); });
+    card.querySelectorAll("[data-f]").forEach(function(inp){ inp.addEventListener("input",function(){ v[inp.getAttribute("data-f")]=inp.value; }); });
+  });
+  updateVehicleCounter();
+}
+function updateVehicleCounter(){ document.getElementById("vehicleCounter").textContent=state.vehicles.length+" / "+MAX_VEHICLES; document.getElementById("addVehicle").disabled=state.vehicles.length>=MAX_VEHICLES; }
+function removeVehicle(id,card){ card.classList.add("removing"); setTimeout(function(){ state.vehicles=state.vehicles.filter(function(v){return v.id!==id;}); renderVehicles(); },280); }
+document.getElementById("addVehicle").addEventListener("click",function(){ if(state.vehicles.length>=MAX_VEHICLES) return; state.vehicles.push({id:++vid,color:"",make:"",licensePlate:""}); renderVehicles(); });
+
+function validateGuestsVehicles(){
+  for(var i=0;i<state.guests.length;i++){ var g=state.guests[i]; if(!g.firstName.trim()||!g.lastName.trim()||!g.type){ alertInline("Please complete all guest fields, or remove empty guest cards."); return false; } }
+  for(var j=0;j<state.vehicles.length;j++){ var v=state.vehicles[j]; if(!v.color.trim()||!v.make.trim()||!v.licensePlate.trim()){ alertInline("Please complete all vehicle fields, or remove empty vehicle cards."); return false; } }
+  return true;
+}
+function alertInline(msg){ var ex=document.getElementById("gv-inline"); if(!ex){ ex=document.createElement("div"); ex.id="gv-inline"; ex.className="info-banner"; ex.style.borderColor="var(--danger)"; ex.style.background="rgba(160,68,42,.10)"; ex.style.color="var(--danger)"; document.querySelector('[data-panel="3"] .nav-buttons').insertAdjacentElement("beforebegin",ex); } ex.innerHTML='<span>⚠️</span><span>'+esc(msg)+'</span>'; ex.style.display="flex"; setTimeout(function(){ if(ex) ex.style.display="none"; },4000); }
+
+function toggleAmenity(key,card){ state.amenities[key]=!state.amenities[key]; card.classList.toggle("checked",state.amenities[key]); updatePricing(); }
+document.getElementById("boatCard").addEventListener("click",function(){ toggleAmenity("boat",this); });
+document.getElementById("waveCard").addEventListener("click",function(){ toggleAmenity("waveRunners",this); });
+function watercraftSelected(){ return state.amenities.boat||state.amenities.waveRunners; }
+function updatePricing(){
+  var wc=watercraftSelected();
+  document.getElementById("gasLine").style.display=wc?"flex":"none";
+  document.getElementById("watercraftWarn").style.display=wc?"flex":"none";
+  document.getElementById("receiptTotal").textContent="$"+(300+(wc?100:0)).toFixed(2);
+  document.getElementById("blLabel").innerHTML=wc?'Boating License <span style="color:var(--danger)">*</span>':'Boating License <span style="color:var(--medium-gray)">(required if using watercraft)</span>';
+}
+
+function syncStep5Prefill(){
+  var r=state.renter||{};
+  var full=((r.firstName||"")+" "+(r.lastName||"")).trim();
+  document.getElementById("agrRenterName").textContent=full||"[RENTER NAME]";
+  setVal("sigName",full); setVal("sigDept",r.department||""); setVal("sigEcName",r.emergencyContactName||""); setVal("sigEcPhone",r.emergencyContactPhone||"");
+  var d=new Date(); setVal("sigDate",d.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}));
+  updatePricing();
+}
+function setVal(id,v){ document.getElementById(id).value=v; }
+
+var canvas=document.getElementById("sigCanvas"),ctx=canvas.getContext("2d"),drawing=false,lastX=0,lastY=0;
+function resizeSigCanvas(){ var ratio=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight; var prev=state.sigHasInk?canvas.toDataURL():null; canvas.width=w*ratio; canvas.height=h*ratio; ctx.setTransform(ratio,0,0,ratio,0,0); ctx.lineWidth=2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#2C2C2C"; if(prev){ var img=new Image(); img.onload=function(){ ctx.drawImage(img,0,0,w,h); }; img.src=prev; } }
+function getPos(e){ var rect=canvas.getBoundingClientRect(); var cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY; return {x:cx-rect.left,y:cy-rect.top}; }
+function startDraw(e){ e.preventDefault(); drawing=true; var p=getPos(e); lastX=p.x; lastY=p.y; document.getElementById("sigPlaceholder").style.display="none"; }
+function moveDraw(e){ if(!drawing) return; e.preventDefault(); var p=getPos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; state.sigHasInk=true; document.getElementById("sigErrWrap").style.display="none"; }
+function endDraw(){ drawing=false; }
+canvas.addEventListener("pointerdown",startDraw);
+canvas.addEventListener("pointermove",moveDraw);
+window.addEventListener("pointerup",endDraw);
+canvas.addEventListener("touchstart",startDraw,{passive:false});
+canvas.addEventListener("touchmove",moveDraw,{passive:false});
+canvas.addEventListener("touchend",endDraw);
+window.addEventListener("resize",function(){ if(state.step===5) resizeSigCanvas(); });
+document.getElementById("clearSig").addEventListener("click",function(){ ctx.clearRect(0,0,canvas.width,canvas.height); state.sigHasInk=false; document.getElementById("sigPlaceholder").style.display="block"; });
+document.getElementById("agreeChk").addEventListener("change",function(){ if(this.checked) document.getElementById("agreeErrWrap").style.display="none"; });
+document.getElementById("manualChk").addEventListener("change",function(){ if(this.checked) document.getElementById("manualErrWrap").style.display="none"; });
+
+var MAX_PDF_BYTES=2.5*1024*1024;
+function compressImage(file,maxDim,quality,cb){ var reader=new FileReader(); reader.onload=function(){ var img=new Image(); img.onload=function(){ var scale=Math.min(1,maxDim/Math.max(img.width,img.height)),cw=Math.max(1,Math.round(img.width*scale)),ch=Math.max(1,Math.round(img.height*scale)),c=document.createElement("canvas"); c.width=cw; c.height=ch; c.getContext("2d").drawImage(img,0,0,cw,ch); try{ cb(c.toDataURL("image/jpeg",quality)); }catch(e){ cb(reader.result); } }; img.onerror=function(){ cb(reader.result); }; img.src=reader.result; }; reader.onerror=function(){ cb(null); }; reader.readAsDataURL(file); }
+function handleUpload(inputId,previewId,slot,errWrapId){ var input=document.getElementById(inputId); input.addEventListener("change",function(){ var file=input.files[0],prev=document.getElementById(previewId); if(!file){ state.documents[slot]=null; prev.innerHTML=""; return; } if(errWrapId) document.getElementById(errWrapId).style.display="none"; if(file.type.indexOf("image/")===0){ prev.innerHTML='<span style="color:var(--medium-gray)">Processing image…</span>'; compressImage(file,1200,0.7,function(dataUrl){ if(!dataUrl){ state.documents[slot]=null; prev.innerHTML='<span style="color:var(--danger)">Could not read that image.</span>'; return; } state.documents[slot]={name:file.name,type:"image/jpeg",data:dataUrl}; prev.innerHTML='<img src="'+dataUrl+'" alt="preview"><span>'+esc(file.name)+'</span>'; }); } else if(file.type==="application/pdf"){ if(file.size>MAX_PDF_BYTES){ state.documents[slot]=null; prev.innerHTML='<span style="color:var(--danger)">PDF too large. Please upload a photo or PDF under 2.5 MB.</span>'; return; } var reader=new FileReader(); reader.onload=function(){ state.documents[slot]={name:file.name,type:file.type,data:reader.result}; prev.innerHTML='<span class="pdf-chip">📄 '+esc(file.name)+'</span>'; }; reader.readAsDataURL(file); } else { state.documents[slot]=null; prev.innerHTML='<span style="color:var(--danger)">Unsupported file type.</span>'; } }); }
+handleUpload("dlUpload","dlPreview","driversLicense","dlErrWrap");
+handleUpload("blUpload","blPreview","boatingLicense","blErrWrap");
+
+document.getElementById("submitBooking").addEventListener("click",async function(){
+  if(!state.checkIn||!state.checkOut){ showStep(1); document.getElementById("calError").textContent="Please select your dates."; return; }
+  if(!state.renter||!state.renter.email){ showStep(2); validateRenter(); return; }
+  var ok=true,firstBad=null;
+  if(!document.getElementById("agreeChk").checked){ document.getElementById("agreeErrWrap").style.display="block"; ok=false; firstBad=firstBad||"agreeErrWrap"; }
+  if(!state.sigHasInk){ document.getElementById("sigErrWrap").style.display="block"; ok=false; firstBad=firstBad||"sigErrWrap"; }
+  if(!document.getElementById("manualChk").checked){ document.getElementById("manualErrWrap").style.display="block"; ok=false; firstBad=firstBad||"manualErrWrap"; }
+  if(!state.documents.driversLicense){ document.getElementById("dlErrWrap").style.display="block"; ok=false; firstBad=firstBad||"dlErrWrap"; }
+  if(watercraftSelected()&&!state.documents.boatingLicense){ document.getElementById("blErrWrap").style.display="block"; ok=false; firstBad=firstBad||"blErrWrap"; }
+  if(!ok){ if(firstBad){ document.getElementById(firstBad).scrollIntoView({behavior:"smooth",block:"center"}); } return; }
+
+  var r=state.renter,id="EBG-"+Date.now(),wc=watercraftSelected();
+  var booking={
+    id:id, status:"pending", submittedAt:new Date().toISOString(),
+    checkIn:state.checkIn, checkOut:state.checkOut, nights:nightsBetween(state.checkIn,state.checkOut),
+    renter:{ firstName:r.firstName, lastName:r.lastName, email:r.email, department:document.getElementById("sigDept").value.trim()||r.department, phone:r.phone, emergencyContactName:document.getElementById("sigEcName").value.trim()||r.emergencyContactName, emergencyContactPhone:document.getElementById("sigEcPhone").value.trim()||r.emergencyContactPhone },
+    guests:state.guests.map(function(g){return{firstName:g.firstName,lastName:g.lastName,type:g.type};}),
+    vehicles:state.vehicles.map(function(v){return{color:v.color,make:v.make,licensePlate:v.licensePlate};}),
+    amenities:{boat:state.amenities.boat,waveRunners:state.amenities.waveRunners},
+    pricing:{cleaningFee:300,watercraftGas:wc?100:0,total:300+(wc?100:0)},
+    documents:{driversLicense:state.documents.driversLicense,boatingLicense:state.documents.boatingLicense||null},
+    signature:canvas.toDataURL("image/png"),
+    agreementAcknowledged:true, manualAcknowledged:true, adminNotes:"", rejectionReason:""
+  };
+
+  // Show a saving indicator
+  var btn=document.getElementById("submitBooking");
+  btn.disabled=true; btn.textContent="Saving…";
+
+  var saved=await saveNewBooking(booking);
+
+  if(!saved){
+    btn.disabled=false; btn.textContent="Submit Booking Request";
+    showSubmitError("We couldn't save your booking. Please try again or contact Susan Haise at 414-397-2882.");
+    return;
   }
 
-  document.getElementById("newBooking").addEventListener("click",resetForm);
-  function resetForm(){
-    // reset state
-    state.checkIn=null; state.checkOut=null; state.pickPhase=0;
-    state.guests=[]; state.vehicles=[];
-    state.amenities={boat:false,waveRunners:false};
-    state.documents={driversLicense:null,boatingLicense:null};
-    state.sigHasInk=false;
-    state.calY=new Date().getFullYear(); state.calM=new Date().getMonth();
-    // reset renter fields
-    ["firstName","lastName","email","department","phone","ecName","ecPhone"].forEach(function(id){
-      var el=document.getElementById(id); el.value=""; setFieldError(id,false);
-    });
-    state.renter={};
-    // reset guests / vehicles / counters
-    renderGuests(); renderVehicles();
-    // reset amenities + pricing
-    document.getElementById("boatCard").classList.remove("checked");
-    document.getElementById("waveCard").classList.remove("checked");
-    updatePricing();
-    // reset agreements + signature
-    document.getElementById("agreeChk").checked=false;
-    document.getElementById("manualChk").checked=false;
-    document.getElementById("agreeErrWrap").style.display="none";
-    document.getElementById("manualErrWrap").style.display="none";
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    document.getElementById("sigPlaceholder").style.display="block";
-    // reset uploads
-    document.getElementById("dlUpload").value=""; document.getElementById("dlPreview").innerHTML="";
-    document.getElementById("blUpload").value=""; document.getElementById("blPreview").innerHTML="";
-    document.getElementById("dlErrWrap").style.display="none";
-    document.getElementById("blErrWrap").style.display="none";
-    document.getElementById("sigErrWrap").style.display="none";
-    document.getElementById("calError").textContent="";
-    var se=document.getElementById("submitErr"); if(se) se.style.display="none";
-    // restore view
-    document.getElementById("confirmScreen").style.display="none";
-    document.getElementById("stepper").style.display="flex";
-    renderCalendar(); updateStaySummary();
-    showStep(1);
-  }
+  document.getElementById("confId").textContent=id;
+  document.getElementById("confMsg").innerHTML='Admin will review your request and contact you at <strong>'+esc(r.email)+'</strong>. Check-in is at <strong>4:00 PM</strong> and check-out is at <strong>10:00 AM</strong>.';
+  document.querySelectorAll(".step-panel").forEach(function(p){p.classList.remove("active");});
+  document.getElementById("stepper").style.display="none";
+  document.getElementById("confirmScreen").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+});
 
-  /* ============================================================
-     HELP MODAL
-     ============================================================ */
-  var helpModal=document.getElementById("helpModal");
-  document.getElementById("helpFab").addEventListener("click",function(){ helpModal.classList.add("open"); });
-  helpModal.addEventListener("click",function(e){ if(e.target===helpModal || e.target.hasAttribute("data-close-help")) helpModal.classList.remove("open"); });
+function showSubmitError(msg){ var el=document.getElementById("submitErr"); if(!el){ el=document.createElement("div"); el.id="submitErr"; el.className="info-banner"; el.style.borderColor="var(--danger)"; el.style.background="rgba(160,68,42,.10)"; el.style.color="var(--danger)"; var nav=document.querySelector('[data-panel="5"] .nav-buttons'); nav.parentNode.insertBefore(el,nav); } el.innerHTML='<span>⚠️</span><span>'+esc(msg)+'</span>'; el.style.display="flex"; el.scrollIntoView({behavior:"smooth",block:"center"}); }
 
-  /* ---------- util ---------- */
-  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+document.getElementById("newBooking").addEventListener("click",resetForm);
+function resetForm(){
+  state.checkIn=null; state.checkOut=null; state.pickPhase=0; state.guests=[]; state.vehicles=[]; state.amenities={boat:false,waveRunners:false}; state.documents={driversLicense:null,boatingLicense:null}; state.sigHasInk=false; state.calY=new Date().getFullYear(); state.calM=new Date().getMonth();
+  ["firstName","lastName","email","department","phone","ecName","ecPhone"].forEach(function(id){ var el=document.getElementById(id); el.value=""; setFieldError(id,false); }); state.renter={};
+  renderGuests(); renderVehicles();
+  document.getElementById("boatCard").classList.remove("checked"); document.getElementById("waveCard").classList.remove("checked"); updatePricing();
+  document.getElementById("agreeChk").checked=false; document.getElementById("manualChk").checked=false;
+  document.getElementById("agreeErrWrap").style.display="none"; document.getElementById("manualErrWrap").style.display="none";
+  ctx.clearRect(0,0,canvas.width,canvas.height); document.getElementById("sigPlaceholder").style.display="block";
+  document.getElementById("dlUpload").value=""; document.getElementById("dlPreview").innerHTML=""; document.getElementById("blUpload").value=""; document.getElementById("blPreview").innerHTML="";
+  document.getElementById("dlErrWrap").style.display="none"; document.getElementById("blErrWrap").style.display="none"; document.getElementById("sigErrWrap").style.display="none"; document.getElementById("calError").textContent="";
+  var se=document.getElementById("submitErr"); if(se) se.style.display="none";
+  document.getElementById("confirmScreen").style.display="none"; document.getElementById("stepper").style.display="flex";
+  renderCalendar(); updateStaySummary(); showStep(1);
+}
 
-  /* ============================================================
-     INIT
-     ============================================================ */
-  // Warn early if the browser blocks storage entirely (e.g. private mode),
-  // since nothing can be saved in that case.
-  function storageAvailable(){ try{ var k="__ebg_t__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } }
-  if(!storageAvailable()){
-    var warn=document.createElement("div");
-    warn.className="info-banner";
-    warn.style.cssText="margin:0 18px 0;max-width:880px;margin:14px auto 0;border-color:var(--danger);background:rgba(160,68,42,.10);color:var(--danger);";
-    warn.innerHTML='<span>⚠️</span><span>Your browser is blocking site storage (this can happen in private/incognito mode). Bookings can’t be saved until storage is enabled.</span>';
-    document.querySelector(".container.page").insertBefore(warn, document.getElementById("stepper"));
-  }
-  function boot(){
-    var p = (window.EBGStore && EBGStore.init) ? EBGStore.init() : Promise.resolve({mode:"local"});
-    Promise.resolve(p).then(function(){
-      renderDow(); renderCalendar(); renderGuests(); renderVehicles(); showStep(1);
-    });
-  }
-  boot();
+var helpModal=document.getElementById("helpModal");
+document.getElementById("helpFab").addEventListener("click",function(){ helpModal.classList.add("open"); });
+helpModal.addEventListener("click",function(e){ if(e.target===helpModal||e.target.hasAttribute("data-close-help")) helpModal.classList.remove("open"); });
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+function storageAvailable(){ try{ var k="__ebg_t__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); return true; }catch(e){ return false; } }
+if(!storageAvailable()){ var warn=document.createElement("div"); warn.className="info-banner"; warn.style.cssText="margin:14px auto 0;max-width:880px;border-color:var(--danger);background:rgba(160,68,42,.10);color:var(--danger);"; warn.innerHTML='<span>⚠️</span><span>Your browser is blocking site storage (this can happen in private/incognito mode). Bookings can\'t be saved until storage is enabled.</span>'; document.querySelector(".container.page").insertBefore(warn,document.getElementById("stepper")); }
+
+function boot(){
+  var p=(window.EBGStore&&EBGStore.init)?EBGStore.init():Promise.resolve({mode:"local"});
+  Promise.resolve(p).then(function(){ renderDow(); renderCalendar(); renderGuests(); renderVehicles(); showStep(1); });
+}
+boot();
 })();
 </script>
 </body>
