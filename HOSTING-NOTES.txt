@@ -1,0 +1,40 @@
+EBG Lake House — Hosting Notes
+==============================
+
+FILES (keep ALL of these together in the SAME folder):
+  index.html     Landing page (links to the two pages below)
+  booking.html   Customer booking page
+  admin.html     Admin dashboard  (default password: EBG2024Admin!)
+  ebg-store.js   Microsoft 365 sync engine  — REQUIRED by both HTML pages
+
+HOW THE SYNC WORKS
+  - Bookings, blocked dates, and license photos are stored in your Microsoft 365
+    SharePoint site ("EBG Lake House"). WordPress only serves the files — NO
+    booking data is stored in WordPress.
+  - Sync is currently gated for safety: add  ?m365=1  to a page URL to turn it on
+    for that browser (e.g.  booking.html?m365=1 ).  Add  ?m365=0  to turn it off.
+    (Once it's confirmed working, this gate can be removed so it's always on.)
+
+*** IMPORTANT — IF YOU CHANGE THE WEB ADDRESS (e.g. host on WordPress) ***
+  Microsoft sign-in only works from web addresses registered in your Entra app.
+  After you know your WordPress URLs, add them as "Single-page application"
+  Redirect URIs:
+     entra.microsoft.com  ->  App registrations  ->  "EBG Lake House Booking"
+     ->  Authentication  ->  Single-page application  ->  Add URI
+  Add the EXACT URLs of the hosted pages, for example:
+     https://YOURSITE/lakehouse/
+     https://YOURSITE/lakehouse/booking.html
+     https://YOURSITE/lakehouse/admin.html
+  Click Save. Without this step, sign-in will fail on the new address.
+  (No code change is needed — the pages auto-detect whatever address they're on.)
+
+HOSTING ON WORDPRESS
+  - Easiest method: upload these files with your host's File Manager or FTP into a
+    folder (e.g. /lakehouse/), then open  https://YOURSITE/lakehouse/booking.html
+  - All files MUST be in the same folder so the pages can find ebg-store.js.
+  - NOTE: WordPress.com (hosted) plans often do NOT allow serving .html files.
+    A self-hosted WordPress.org site (with File Manager / FTP) does. If your plan
+    won't serve .html, a static host like Cloudflare Pages or GitHub Pages is the
+    simpler choice and works identically.
+
+DEFAULT ADMIN PASSWORD:  EBG2024Admin!   (change it in admin -> Settings)
