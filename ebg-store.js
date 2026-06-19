@@ -64,6 +64,7 @@
     blocked: [],              // cache of {date, reason}
     itemIds: { bookings: {}, blocked: {} }, // businessId -> sharepoint item id
     lastJson: {},             // booking id -> last-committed canonical JSON (to skip no-op writes)
+    dataCol: "DataJson",      // resolved at runtime: the list column used to store booking JSON
     pca: null,
     lastError: null
   };
@@ -204,14 +205,22 @@
     }).catch(function (e) { console.warn("[EBGStore] ensureColumns(" + listName + "):", e && e.message); });
   }
 
-  // Confirm the critical DataJson column actually exists after we tried to add it.
-  // If it doesn't, surface a clear, actionable error instead of a cryptic 400 on save.
-  function verifyDataColumn() {
-    return graph("GET", "/sites/" + state.siteId + "/lists/" + state.listIds[CONFIG.bookingsList] + "/columns?$select=name&$top=200").then(function (r) {
-      var ok = (r.value || []).some(function (c) { return (c.name || "").toLowerCase() === "datajson"; });
-      if (!ok) {
-        throw new Error("The 'DataJson' column is missing from the 'EBG Bookings' list and couldn't be created automatically. A SharePoint admin needs to add a 'Multiple lines of text' column named exactly DataJson to that list, then reload.");
-      }
+  // Find a usable large-text column for the booking JSON. Prefer one named DataJson;
+  // otherwise use ANY multi-line text column the list already has; otherwise create one.
+  // This adapts to whatever the list actually contains instead of demanding an exact name.
+  function resolveDataCol() {
+    var listId = state.listIds[CONFIG.bookingsList];
+    return graph("GET", "/sites/" + state.siteId + "/lists/" + listId + "/columns?$top=200").then(function (r) {
+      var cols = r.value || [];
+      var exact = cols.filter(function (c) { return (c.name || "").toLowerCase() === "datajson"; })[0];
+      if (exact) { state.dataCol = exact.name; return; }
+      var multi = cols.filter(function (c) { return c.text && c.text.allowMultipleLines === true && c.readOnly !== true; })[0];
+      if (multi) { state.dataCol = multi.name; return; }
+      return graph("POST", "/sites/" + state.siteId + "/lists/" + listId + "/columns", { name: "DataJson", text: { allowMultipleLines: true, textType: "plain" } })
+        .then(function () { state.dataCol = "DataJson"; })
+        .catch(function (e) {
+          throw new Error("The 'EBG Bookings' list has no large-text column and one couldn't be created (" + ((e && e.message) || e) + "). Add a 'Multiple lines of text' column to that list (any name).");
+        });
     });
   }
 
@@ -231,7 +240,7 @@
     ];
     return ensureList(CONFIG.bookingsList, bookingCols)
       .then(function () { return ensureColumns(CONFIG.bookingsList, bookingCols); })
-      .then(function () { return verifyDataColumn(); })
+      .then(function () { return resolveDataCol(); })
       .then(function () { return ensureList(CONFIG.blockedList, blockedCols); })
       .then(function () { return ensureColumns(CONFIG.blockedList, blockedCols); });
   }
@@ -258,14 +267,15 @@
 
   /* ---------- map booking <-> list item ---------- */
   function bookingToFields(b) {
-    return {
+    var f = {
       Title: b.id, Status: b.status || "pending",
       RenterName: ((b.renter && b.renter.firstName) || "") + " " + ((b.renter && b.renter.lastName) || ""),
       Email: (b.renter && b.renter.email) || "",
       CheckIn: b.checkIn || "", CheckOut: b.checkOut || "",
-      SubmittedAt: b.submittedAt || "",
-      DataJson: JSON.stringify(stripFiles(b))
+      SubmittedAt: b.submittedAt || ""
     };
+    f[state.dataCol] = JSON.stringify(stripFiles(b));
+    return f;
   }
   // store file references (not base64) inside DataJson to stay small
   function stripFiles(b) {
@@ -287,9 +297,10 @@
         var hydrations = [];
         (r.value || []).forEach(function (it) {
           var f = it.fields || {};
-          if (!f.DataJson) return;
+          var raw = f[state.dataCol] || f.DataJson;
+          if (!raw) return;
           var b;
-          try { b = JSON.parse(f.DataJson); } catch (e) { return; }
+          try { b = JSON.parse(raw); } catch (e) { return; }
           b.status = f.Status || b.status;
           state.itemIds.bookings[b.id] = it.id;
           state.lastJson[b.id] = JSON.stringify(stripFiles(b)); // canonical snapshot to detect real changes
@@ -355,16 +366,16 @@
   function patchItem(listName, itemId, fields) {
     var base = "/sites/" + state.siteId + "/lists/" + state.listIds[listName] + "/items/" + itemId + "/fields";
     return graph("PATCH", base, fields).catch(function () {
-      // retry with only Title + DataJson if an auxiliary column is unexpected/typed
-      var minimal = {}; if (fields.Title) minimal.Title = fields.Title; if (fields.DataJson) minimal.DataJson = fields.DataJson;
+      // retry with only Title + the data column if an auxiliary column is unexpected/typed
+      var minimal = {}; if (fields.Title) minimal.Title = fields.Title; if (fields[state.dataCol] !== undefined) minimal[state.dataCol] = fields[state.dataCol];
       return graph("PATCH", base, minimal);
     });
   }
   function retryFields(itemsPath, fields) {
     return graph("POST", itemsPath, { fields: fields }).catch(function (e) {
-      // last resort: the full record is preserved in DataJson; Title is always present.
+      // last resort: the full record is preserved in the data column; Title is always present.
       var minimal = { Title: fields.Title };
-      if (fields.DataJson !== undefined) minimal.DataJson = fields.DataJson;
+      if (fields[state.dataCol] !== undefined) minimal[state.dataCol] = fields[state.dataCol];
       return graph("POST", itemsPath, { fields: minimal });
     });
   }
