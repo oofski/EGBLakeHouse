@@ -204,6 +204,17 @@
     }).catch(function (e) { console.warn("[EBGStore] ensureColumns(" + listName + "):", e && e.message); });
   }
 
+  // Confirm the critical DataJson column actually exists after we tried to add it.
+  // If it doesn't, surface a clear, actionable error instead of a cryptic 400 on save.
+  function verifyDataColumn() {
+    return graph("GET", "/sites/" + state.siteId + "/lists/" + state.listIds[CONFIG.bookingsList] + "/columns?$select=name&$top=200").then(function (r) {
+      var ok = (r.value || []).some(function (c) { return (c.name || "").toLowerCase() === "datajson"; });
+      if (!ok) {
+        throw new Error("The 'DataJson' column is missing from the 'EBG Bookings' list and couldn't be created automatically. A SharePoint admin needs to add a 'Multiple lines of text' column named exactly DataJson to that list, then reload.");
+      }
+    });
+  }
+
   function ensureSchema() {
     var bookingCols = [
       { name: "Status", text: {} },
@@ -220,6 +231,7 @@
     ];
     return ensureList(CONFIG.bookingsList, bookingCols)
       .then(function () { return ensureColumns(CONFIG.bookingsList, bookingCols); })
+      .then(function () { return verifyDataColumn(); })
       .then(function () { return ensureList(CONFIG.blockedList, blockedCols); })
       .then(function () { return ensureColumns(CONFIG.blockedList, blockedCols); });
   }
