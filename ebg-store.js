@@ -63,6 +63,7 @@
     bookings: [],             // cache of booking objects
     blocked: [],              // cache of {date, reason}
     itemIds: { bookings: {}, blocked: {} }, // businessId -> sharepoint item id
+    lastJson: {},             // booking id -> last-committed canonical JSON (to skip no-op writes)
     pca: null,
     lastError: null
   };
@@ -237,9 +238,10 @@
     var copy = JSON.parse(JSON.stringify(b));
     if (copy.documents) {
       ["driversLicense", "boatingLicense"].forEach(function (k) {
-        if (copy.documents[k] && copy.documents[k]._ref) { /* already a ref */ }
+        if (copy.documents[k] && copy.documents[k]._ref) { delete copy.documents[k].data; }
       });
     }
+    if (copy._sigRef) { delete copy.signature; }   // signature lives in the drive, not the JSON
     return copy;
   }
 
@@ -247,7 +249,7 @@
   function loadAll() {
     return graph("GET", "/sites/" + state.siteId + "/lists/" + state.listIds[CONFIG.bookingsList] + "/items?expand=fields&$top=500")
       .then(function (r) {
-        state.bookings = []; state.itemIds.bookings = {};
+        state.bookings = []; state.itemIds.bookings = {}; state.lastJson = {};
         var hydrations = [];
         (r.value || []).forEach(function (it) {
           var f = it.fields || {};
@@ -256,6 +258,7 @@
           try { b = JSON.parse(f.DataJson); } catch (e) { return; }
           b.status = f.Status || b.status;
           state.itemIds.bookings[b.id] = it.id;
+          state.lastJson[b.id] = JSON.stringify(stripFiles(b)); // canonical snapshot to detect real changes
           state.bookings.push(b);
           // hydrate file refs -> usable download URLs for display
           hydrations.push(hydrateFiles(b));
@@ -337,15 +340,23 @@
     all.forEach(function (b) {
       seen[b.id] = true;
       var itemId = state.itemIds.bookings[b.id];
-      if (!itemId) ops.push(createBookingRemote(b));
-      else ops.push(patchItem(CONFIG.bookingsList, itemId, bookingToFields(b)));
+      if (!itemId) {
+        // brand new booking -> upload files + create the item
+        ops.push(createBookingRemote(b).then(function () { state.lastJson[b.id] = JSON.stringify(stripFiles(b)); }));
+      } else {
+        // existing booking -> only write if it actually changed (skip no-ops)
+        var cur = JSON.stringify(stripFiles(b));
+        if (cur !== state.lastJson[b.id]) {
+          ops.push(patchItem(CONFIG.bookingsList, itemId, bookingToFields(b)).then(function () { state.lastJson[b.id] = cur; }));
+        }
+      }
     });
     // deletions (e.g. "clear all bookings")
     Object.keys(state.itemIds.bookings).forEach(function (id) {
       if (!seen[id]) {
         var itemId = state.itemIds.bookings[id];
         ops.push(graph("DELETE", "/sites/" + state.siteId + "/lists/" + state.listIds[CONFIG.bookingsList] + "/items/" + itemId).then(function () {
-          delete state.itemIds.bookings[id];
+          delete state.itemIds.bookings[id]; delete state.lastJson[id];
         }));
       }
     });
