@@ -185,21 +185,43 @@
     });
   }
 
+  // Add any missing columns to a list (works whether the list was pre-created by an
+  // admin or auto-created here). Needs site write access; per-column failures are
+  // swallowed so a non-owner visitor isn't blocked (the site owner adds them first).
+  function ensureColumns(listName, defs) {
+    var listId = state.listIds[listName];
+    if (!listId) return Promise.resolve();
+    return graph("GET", "/sites/" + state.siteId + "/lists/" + listId + "/columns?$select=name&$top=200").then(function (r) {
+      var have = {};
+      (r.value || []).forEach(function (c) { have[(c.name || "").toLowerCase()] = true; });
+      var toAdd = defs.filter(function (d) { return !have[d.name.toLowerCase()]; });
+      return toAdd.reduce(function (p, d) {
+        return p.then(function () {
+          return graph("POST", "/sites/" + state.siteId + "/lists/" + listId + "/columns", d)
+            .catch(function (e) { console.warn("[EBGStore] could not add column '" + d.name + "':", e && e.message); });
+        });
+      }, Promise.resolve());
+    }).catch(function (e) { console.warn("[EBGStore] ensureColumns(" + listName + "):", e && e.message); });
+  }
+
   function ensureSchema() {
-    return ensureList(CONFIG.bookingsList, [
+    var bookingCols = [
       { name: "Status", text: {} },
       { name: "RenterName", text: {} },
       { name: "Email", text: {} },
       { name: "CheckIn", text: {} },
       { name: "CheckOut", text: {} },
       { name: "SubmittedAt", text: {} },
-      { name: "DataJson", text: { allowMultipleLines: true } }
-    ]).then(function () {
-      return ensureList(CONFIG.blockedList, [
-        { name: "BlockDate", text: {} },
-        { name: "Reason", text: {} }
-      ]);
-    });
+      { name: "DataJson", text: { allowMultipleLines: true, textType: "plain" } }
+    ];
+    var blockedCols = [
+      { name: "BlockDate", text: {} },
+      { name: "Reason", text: {} }
+    ];
+    return ensureList(CONFIG.bookingsList, bookingCols)
+      .then(function () { return ensureColumns(CONFIG.bookingsList, bookingCols); })
+      .then(function () { return ensureList(CONFIG.blockedList, blockedCols); })
+      .then(function () { return ensureColumns(CONFIG.blockedList, blockedCols); });
   }
 
   /* ---------- files (license images + signature) ---------- */
@@ -272,7 +294,7 @@
         state.blocked = []; state.itemIds.blocked = {};
         (r.value || []).forEach(function (it) {
           var f = it.fields || {};
-          var date = (f.BlockDate || "").slice(0, 10);
+          var date = (f.BlockDate || f.Title || "").slice(0, 10);
           if (!date) return;
           state.blocked.push({ date: date, reason: f.Reason || "" });
           state.itemIds.blocked[date] = it.id;
@@ -321,15 +343,16 @@
   function patchItem(listName, itemId, fields) {
     var base = "/sites/" + state.siteId + "/lists/" + state.listIds[listName] + "/items/" + itemId + "/fields";
     return graph("PATCH", base, fields).catch(function () {
-      // retry with only Title + DataJson if a column name is unexpected
-      var minimal = {}; if (fields.Title) minimal.Title = fields.Title; if (fields.DataJson) minimal.DataJson = fields.DataJson; if (fields.Status) minimal.Status = fields.Status;
+      // retry with only Title + DataJson if an auxiliary column is unexpected/typed
+      var minimal = {}; if (fields.Title) minimal.Title = fields.Title; if (fields.DataJson) minimal.DataJson = fields.DataJson;
       return graph("PATCH", base, minimal);
     });
   }
   function retryFields(itemsPath, fields) {
     return graph("POST", itemsPath, { fields: fields }).catch(function (e) {
-      // some columns may not exist in their list — retry with the essentials only
-      var minimal = { Title: fields.Title, DataJson: fields.DataJson, Status: fields.Status };
+      // last resort: the full record is preserved in DataJson; Title is always present.
+      var minimal = { Title: fields.Title };
+      if (fields.DataJson !== undefined) minimal.DataJson = fields.DataJson;
       return graph("POST", itemsPath, { fields: minimal });
     });
   }
