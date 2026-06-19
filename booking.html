@@ -1306,7 +1306,9 @@
       var nav=document.querySelector('[data-panel="5"] .nav-buttons');
       nav.parentNode.insertBefore(el, nav);
     }
-    el.innerHTML='<span>⚠️</span><span>'+esc(msg)+'</span>';
+    var detail = (window.EBGStore && EBGStore.lastErrorText && EBGStore.lastErrorText())
+      ? ('<br><small style="opacity:.85;word-break:break-word">Technical details: '+esc(EBGStore.lastErrorText())+'</small>') : "";
+    el.innerHTML='<span>⚠️</span><span>'+esc(msg)+detail+'</span>';
     el.style.display="flex";
     el.scrollIntoView({behavior:"smooth",block:"center"});
   }

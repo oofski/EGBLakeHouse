@@ -433,6 +433,7 @@
       }).catch(fail);
     },
     isCloud: function () { return state.mode === "m365"; },
+    lastErrorText: function () { return state.lastError || ""; },
     getBookings: function () {
       return state.mode === "m365" ? state.bookings.slice() : lsGet(LS_BOOKINGS);
     },
