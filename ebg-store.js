@@ -17,7 +17,7 @@
     tenantId: "3c96cae6-ac92-4495-b92c-52b97d5a0b5e",
     clientId: "3835e7f3-703d-46e1-986d-d337167b16a0",
     siteHost: "ibw0.sharepoint.com",
-    sitePath: "/sites/NeroliAdminLeadership",
+    sitePath: "/sites/EBGLakeHouse",
     bookingsList: "EBG Bookings",
     blockedList: "EBG Blocked Dates",
     docLibrary: "EBG Documents",
@@ -78,10 +78,11 @@
         "padding:8px 14px;border-radius:50px;box-shadow:0 4px 16px rgba(44,44,44,.18);max-width:340px;cursor:pointer;";
       chip.title = "Click to copy diagnostic details";
       chip.addEventListener("click", function () {
-        var t = (state.lastError ? ("ERROR: " + state.lastError + "\n") : "") +
-          "mode=" + state.mode + " site=" + (state.siteId ? "ok" : "—") +
-          " user=" + (state.account ? state.account.username : "—");
+        var t = (state.lastError ? ("ERROR: " + state.lastError + "\n\n") : "") +
+          "mode=" + state.mode + " | site=" + (state.siteId ? "ok" : "not resolved") +
+          " | user=" + (state.account ? state.account.username : "(not signed in)");
         try { navigator.clipboard.writeText(t); } catch (e) {}
+        try { alert(t); } catch (e) {}   // show on screen so it can be screenshotted
       });
       document.body.appendChild(chip);
     }
