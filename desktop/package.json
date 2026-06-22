@@ -1,0 +1,42 @@
+{
+  "name": "ebg-lakehouse-desktop",
+  "version": "1.0.0",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "express": "^4.22.2",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "electron": "^31",
+    "electron-builder": "^24"
+  },
+  "build": {
+    "appId": "com.ebg.lakehouse",
+    "productName": "EBG Lake House",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!testdata/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

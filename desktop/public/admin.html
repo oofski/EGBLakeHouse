@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBG Lake House — Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Local LAN storage layer (replaces Microsoft 365 / MSAL for the desktop app). -->
+<script src="lan-store.js"></script>
+<style>
+  :root{
+    --cream:#F5F0E8; --warm-white:#FDFAF5; --gold:#B8965A; --gold-light:#D4B483;
+    --gold-dark:#8B6E3A; --charcoal:#2C2C2C; --medium-gray:#6B6B6B; --light-gray:#E8E3DA;
+    --border:#D4C9B5; --success:#4A7C59; --warning:#C4813A; --danger:#A0442A; --white:#FFFFFF;
+    --shadow:0 4px 20px rgba(44,44,44,.08); --shadow-lg:0 10px 40px rgba(44,44,44,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Jost','Helvetica Neue',sans-serif;background:var(--cream);color:var(--charcoal);line-height:1.6;font-weight:300;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-height:1.2;}
+  /* ---------- PASSWORD GATE ---------- */
+  .gate{position:fixed;inset:0;background:rgba(44,44,44,.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .gate-box{background:var(--warm-white);border-radius:12px;box-shadow:var(--shadow-lg);padding:44px 38px;max-width:400px;width:100%;text-align:center;}
+  .gate-box .logo-text{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold);}
+  .gate-box .logo-sub{letter-spacing:5px;text-transform:uppercase;font-size:.8rem;color:var(--charcoal);margin-bottom:8px;}
+  .gate-box p{color:var(--medium-gray);font-size:.9rem;margin-bottom:22px;}
+  .gate-box input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:'Jost',sans-serif;margin-bottom:14px;text-align:center;letter-spacing:2px;}
+  .gate-box input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,90,.15);}
+  .gate-err{color:var(--danger);font-size:.85rem;min-height:20px;margin-bottom:8px;}
+  .shake{animation:shake .4s ease;}
+  @keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-9px);}40%,80%{transform:translateX(9px);}}
+  /* ---------- BUTTONS ---------- */
+  .btn{font-family:'Jost',sans-serif;border:none;cursor:pointer;border-radius:50px;padding:11px 24px;font-size:.9rem;letter-spacing:.4px;transition:all .22s ease;display:inline-flex;align-items:center;gap:7px;justify-content:center;}
+  .btn-gold{background:var(--gold);color:#fff;}
+  .btn-gold:hover{background:var(--gold-dark);box-shadow:0 6px 18px rgba(184,150,90,.32);}
+  .btn-outline{background:transparent;color:var(--gold-dark);border:1.5px solid var(--gold);}
+  .btn-outline:hover{background:var(--gold);color:#fff;}
+  .btn-ghost{background:var(--light-gray);color:var(--charcoal);}
+  .btn-ghost:hover{background:var(--border);}
+  .btn-success{background:var(--success);color:#fff;}
+  .btn-success:hover{filter:brightness(1.08);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-danger:hover{filter:brightness(1.08);}
+  .btn-sm{padding:8px 16px;font-size:.82rem;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  /* ---------- TOP NAV ---------- */
+  .topnav{background:var(--charcoal);color:#fff;padding:0 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;box-shadow:var(--shadow);position:sticky;top:0;z-index:50;}
+  .topnav .brand{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold-light);padding:16px 0;}
+  .topnav .brand span{color:#fff;font-weight:400;font-size:1.1rem;}
+  .nav-tabs{display:flex;gap:4px;flex-wrap:wrap;}
+  .nav-tab{background:none;border:none;color:#cfc8ba;padding:18px 18px;cursor:pointer;font-family:'Jost',sans-serif;font-size:.92rem;letter-spacing:.5px;border-bottom:3px solid transparent;transition:all .2s ease;}
+  .nav-tab:hover{color:#fff;}
+  .nav-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+  .logout-btn{background:none;border:1px solid var(--medium-gray);color:#cfc8ba;border-radius:50px;padding:7px 16px;cursor:pointer;font-family:'Jost',sans-serif;font-size:.82rem;transition:all .2s ease;}
+  .logout-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+  @media(max-width:640px){.topnav{justify-content:center;}.nav-tab{padding:12px 12px;font-size:.82rem;}}
+  /* ---------- LAYOUT ---------- */
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 18px 80px;}
+  .tab-panel{display:none;animation:fade .3s ease;}
+  .tab-panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .panel-title{font-size:1.9rem;margin-bottom:4px;}
+  .panel-sub{color:var(--medium-gray);margin-bottom:22px;font-size:.92rem;}
+  .gold-rule{height:1px;background:var(--border);margin:18px 0;position:relative;}
+  .gold-rule::after{content:"";position:absolute;left:0;top:0;width:48px;height:1px;background:var(--gold);}
+  /* ---------- FILTER BAR ---------- */
+  .filter-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;box-shadow:var(--shadow);}
+  .filter-bar input,.filter-bar select{padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Jost',sans-serif;font-size:.88rem;background:#fff;}
+  .filter-bar input:focus,.filter-bar select:focus{outline:none;border-color:var(--gold);}
+  .filter-bar .search{flex:1;min-width:160px;}
+  .seg{display:flex;border:1.5px solid var(--border);border-radius:50px;overflow:hidden;}
+  .seg button{background:#fff;border:none;padding:8px 15px;cursor:pointer;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--medium-gray);transition:all .2s ease;}
+  .seg button.active{background:var(--gold);color:#fff;}
+  .filter-lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);}
+  /* ---------- BOOKING CARDS ---------- */
+  .booking-card{background:var(--warm-white);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .2s ease;}
+  .booking-card:hover{box-shadow:var(--shadow-lg);}
+  .bc-head{display:flex;align-items:center;gap:16px;padding:16px 20px;cursor:pointer;flex-wrap:wrap;}
+  .bc-id{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--gold-dark);}
+  .bc-name{font-weight:500;font-size:1.02rem;}
+  .bc-dates{color:var(--medium-gray);font-size:.88rem;}
+  .bc-meta{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .bc-submitted{font-size:.76rem;color:var(--medium-gray);}
+  .badge{padding:5px 14px;border-radius:50px;font-size:.74rem;letter-spacing:.5px;text-transform:uppercase;font-weight:500;}
+  .badge.pending{background:rgba(184,150,90,.18);color:var(--gold-dark);}
+  .badge.approved{background:rgba(74,124,89,.18);color:var(--success);}
+  .badge.rejected{background:rgba(160,68,42,.16);color:var(--danger);}
+  .bc-chevron{transition:transform .25s ease;color:var(--medium-gray);font-size:1.1rem;}
+  .booking-card.open .bc-chevron{transform:rotate(180deg);}
+  .bc-body{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+  .booking-card.open .bc-body{max-height:3000px;}
+  .bc-inner{padding:4px 20px 20px;border-top:1px solid var(--border);}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:16px 0;}
+  @media(max-width:680px){.detail-grid{grid-template-columns:1fr;}.bc-meta{margin-left:0;width:100%;}}
+  .detail-block h5{font-family:'Jost',sans-serif;font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;color:var(--gold-dark);margin-bottom:6px;font-weight:600;}
+  .detail-block .row{font-size:.9rem;margin-bottom:3px;}
+  .detail-block .row b{font-weight:500;}
+  .mini-list{list-style:none;font-size:.9rem;}
+  .mini-list li{padding:4px 0;border-bottom:1px dashed var(--border);}
+  .pill{display:inline-block;background:var(--cream);border:1px solid var(--border);border-radius:50px;padding:3px 12px;font-size:.78rem;margin:2px 4px 2px 0;}
+  .doc-badge{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;margin:4px 0;}
+  .doc-present{color:var(--success);}
+  .doc-missing{color:var(--danger);}
+  .thumb{max-height:64px;border-radius:6px;border:1px solid var(--border);cursor:pointer;vertical-align:middle;margin-left:8px;transition:transform .15s ease;}
+  .thumb:hover{transform:scale(1.04);}
+  .sig-display{background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px;display:inline-block;max-width:100%;}
+  .sig-display img{max-height:90px;max-width:100%;display:block;}
+  .action-bar{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--medium-gray);}
+  .empty-state .em{font-size:2.6rem;display:block;margin-bottom:10px;}
+  /* ---------- CALENDAR ---------- */
+  .cal-card{background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:var(--shadow);max-width:560px;margin:0 auto;}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .cal-head h3{font-size:1.4rem;}
+  .cal-nav{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:1.1rem;color:var(--gold-dark);transition:all .2s ease;}
+  .cal-nav:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .cal-dow{text-align:center;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);padding:5px 0;}
+  .cal-cell{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;font-size:.85rem;background:var(--cream);border:1.5px solid transparent;transition:all .15s ease;position:relative;padding:3px;}
+  .cal-cell.empty{background:transparent;}
+  .cal-cell.today{border-color:var(--gold);font-weight:600;}
+  .cal-cell.approved{background:var(--success);color:#fff;cursor:pointer;}
+  .cal-cell.pending{background:repeating-linear-gradient(45deg,var(--gold-light),var(--gold-light) 6px,var(--gold) 6px,var(--gold) 12px);color:#fff;cursor:pointer;}
+  .cal-cell.blocked{background:var(--charcoal);color:#8a8a8a;text-decoration:line-through;}
+  .cal-cell.buffer{background:var(--light-gray);color:#b0a99b;}
+  .cal-cell.toggle-on{background:var(--danger);color:#fff;}
+  .cal-cell.clickable{cursor:pointer;}
+  .cal-cell.clickable:hover{filter:brightness(.95);outline:2px solid var(--gold);}
+  .cal-init{font-size:.6rem;letter-spacing:.5px;margin-top:1px;opacity:.95;}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:18px;font-size:.78rem;color:var(--medium-gray);}
+  .cal-legend span{display:flex;align-items:center;gap:6px;}
+  .lg-swatch{width:14px;height:14px;border-radius:4px;display:inline-block;}
+  /* ---------- BLOCKED DATES ---------- */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+  .panel-box{background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:var(--shadow);}
+  .panel-box h4{font-size:1.25rem;margin-bottom:12px;color:var(--gold-dark);}
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .field-row label{font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);}
+  .field-row input,.field-row select{padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Jost',sans-serif;font-size:.9rem;background:#fff;}
+  .field-row input:focus,.field-row select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,90,.15);}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:50px;padding:7px 8px 7px 15px;font-size:.84rem;margin:0 6px 8px 0;}
+  .chip .chip-x{width:22px;height:22px;border-radius:50%;border:none;background:var(--light-gray);color:var(--danger);cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;}
+  .chip .chip-x:hover{background:var(--danger);color:#fff;}
+  .chip .chip-reason{color:var(--medium-gray);font-style:italic;}
+  /* ---------- SETTINGS ---------- */
+  .info-card{background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:22px;}
+  .info-card .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);font-size:.92rem;}
+  .info-card .row:last-child{border-bottom:none;}
+  .info-card .row b{color:var(--gold-dark);font-weight:500;}
+  .danger-zone{border:1px solid rgba(160,68,42,.4);}
+  .danger-zone h4{color:var(--danger);}
+  /* ---------- MODAL ---------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(44,44,44,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .modal-overlay.open{display:flex;animation:fade .22s ease;}
+  .modal-box{background:var(--warm-white);border-radius:12px;max-width:620px;width:100%;padding:30px 30px;box-shadow:var(--shadow-lg);position:relative;max-height:88vh;overflow-y:auto;animation:pop .25s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+  .modal-box h3{font-size:1.5rem;color:var(--gold-dark);margin-bottom:14px;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--medium-gray);}
+  .modal-box textarea{width:100%;min-height:90px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'Jost',sans-serif;font-size:.92rem;resize:vertical;}
+  .modal-box textarea:focus{outline:none;border-color:var(--gold);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap;}
+  .modal-err{color:var(--danger);font-size:.82rem;margin-top:6px;min-height:18px;}
+  .lightbox img{max-width:100%;border-radius:8px;border:1px solid var(--border);}
+  /* legal doc inside modal */
+  .doc-viewer{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:22px 24px;max-height:420px;overflow-y:auto;font-size:.86rem;}
+  .doc-viewer h3{text-align:center;font-size:1.3rem;margin-bottom:4px;}
+  .doc-viewer h4{font-size:1rem;margin:16px 0 5px;color:var(--gold-dark);}
+  .doc-viewer ul{margin:5px 0 8px 20px;}
+  .doc-viewer li{margin-bottom:4px;}
+  .doc-viewer .doc-meta{text-align:center;color:var(--medium-gray);font-size:.8rem;margin-bottom:8px;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:13px 24px;border-radius:50px;box-shadow:var(--shadow-lg);z-index:300;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- ============ PASSWORD GATE ============ -->
+<div class="gate" id="gate">
+  <div class="gate-box" id="gateBox">
+    <div class="logo-text">Edgeless Beauty Group</div>
+    <div class="logo-sub">Lake House Admin</div>
+    <p>Please enter the administrator password to continue.</p>
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password">
+    <div class="gate-err" id="gateErr"></div>
+    <button class="btn btn-gold" id="enterBtn" style="width:100%;">Enter Dashboard</button>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="dashboard" style="display:none;">
+  <nav class="topnav">
+    <div class="brand">EBG Lake House <span>— Admin</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="bookings">Bookings</button>
+      <button class="nav-tab" data-tab="calendar">Calendar</button>
+      <button class="nav-tab" data-tab="blocked">Blocked Dates</button>
+      <button class="nav-tab" data-tab="settings">Settings</button>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </nav>
+
+  <div class="wrap">
+
+    <!-- ===== TAB 1: BOOKINGS ===== -->
+    <section class="tab-panel active" data-panel="bookings">
+      <h2 class="panel-title">Bookings</h2>
+      <p class="panel-sub">Review, approve, and manage all booking requests.</p>
+      <div class="filter-bar">
+        <input type="text" class="search" id="searchInput" placeholder="🔍 Search by name or booking ID…">
+        <div class="seg" id="statusSeg">
+          <button class="active" data-status="all">All</button>
+          <button data-status="pending">Pending</button>
+          <button data-status="approved">Approved</button>
+          <button data-status="rejected">Rejected</button>
+        </div>
+        <span class="filter-lbl">Sort</span>
+        <select id="sortSelect">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="checkin">Check-in Date</option>
+        </select>
+      </div>
+      <div id="bookingsList"></div>
+    </section>
+
+    <!-- ===== TAB 2: CALENDAR ===== -->
+    <section class="tab-panel" data-panel="calendar">
+      <h2 class="panel-title">Calendar</h2>
+      <p class="panel-sub">All approved and pending bookings, blocked dates, and buffers at a glance.</p>
+      <div class="cal-card">
+        <div class="cal-head">
+          <button class="cal-nav" id="acPrev">‹</button>
+          <h3 id="acTitle">Month</h3>
+          <button class="cal-nav" id="acNext">›</button>
+        </div>
+        <div class="cal-grid" id="acDow"></div>
+        <div class="cal-grid" id="acGrid" style="margin-top:5px;"></div>
+        <div class="cal-legend">
+          <span><i class="lg-swatch" style="background:var(--success);"></i>Approved</span>
+          <span><i class="lg-swatch" style="background:repeating-linear-gradient(45deg,var(--gold-light),var(--gold-light) 3px,var(--gold) 3px,var(--gold) 6px);"></i>Pending</span>
+          <span><i class="lg-swatch" style="background:var(--charcoal);"></i>Blocked</span>
+          <span><i class="lg-swatch" style="background:var(--light-gray);"></i>Buffer</span>
+          <span><i class="lg-swatch" style="background:var(--cream);border:1px solid var(--border);"></i>Available</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 3: BLOCKED DATES ===== -->
+    <section class="tab-panel" data-panel="blocked">
+      <h2 class="panel-title">Blocked Dates</h2>
+      <p class="panel-sub">Block off dates for maintenance, family use, or holidays. Changes appear instantly on the booking page.</p>
+      <div class="two-col">
+        <div class="panel-box">
+          <h4>Toggle Individual Dates</h4>
+          <p style="font-size:.85rem;color:var(--medium-gray);margin-bottom:14px;">Click a date to block or unblock it.</p>
+          <div class="cal-head">
+            <button class="cal-nav" id="bcPrev">‹</button>
+            <h3 id="bcTitle" style="font-size:1.2rem;">Month</h3>
+            <button class="cal-nav" id="bcNext">›</button>
+          </div>
+          <div class="cal-grid" id="bcDow"></div>
+          <div class="cal-grid" id="bcGrid" style="margin-top:5px;"></div>
+        </div>
+        <div class="panel-box">
+          <h4>Block a Date Range</h4>
+          <div class="field-row"><label>Start Date</label><input type="date" id="rangeStart"></div>
+          <div class="field-row"><label>End Date</label><input type="date" id="rangeEnd"></div>
+          <div class="field-row"><label>Reason</label>
+            <select id="rangeReason">
+              <option value="Maintenance">Maintenance</option>
+              <option value="Family Use">Family Use</option>
+              <option value="Holiday">Holiday</option>
+              <option value="Private Event">Private Event</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="modal-err" id="rangeErr"></div>
+          <button class="btn btn-gold btn-sm" id="blockRangeBtn">Block Range</button>
+
+          <div class="gold-rule"></div>
+          <h4>Currently Blocked</h4>
+          <div id="blockedChips" style="margin-bottom:14px;"></div>
+          <button class="btn btn-danger btn-sm" id="clearBlockedBtn">Clear All Blocked Dates</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 4: SETTINGS ===== -->
+    <section class="tab-panel" data-panel="settings">
+      <h2 class="panel-title">Settings</h2>
+      <p class="panel-sub">Administrative actions and property reference.</p>
+      <div class="two-col">
+        <div>
+          <div class="panel-box" style="margin-bottom:24px;">
+            <h4>Change Admin Password</h4>
+            <div class="field-row"><label>Current Password</label><input type="password" id="curPw"></div>
+            <div class="field-row"><label>New Password</label><input type="password" id="newPw"></div>
+            <div class="field-row"><label>Confirm New Password</label><input type="password" id="confPw"></div>
+            <div class="modal-err" id="pwChangeMsg"></div>
+            <button class="btn btn-gold btn-sm" id="changePwBtn">Update Password</button>
+          </div>
+          <div class="panel-box">
+            <h4>Data</h4>
+            <p style="font-size:.85rem;color:var(--medium-gray);margin-bottom:14px;">Export all booking records as a JSON backup file.</p>
+            <button class="btn btn-outline btn-sm" id="exportBtn">⬇ Export All Bookings (JSON)</button>
+          </div>
+        </div>
+        <div>
+          <div class="info-card" style="margin-bottom:24px;">
+            <h4 style="color:var(--gold-dark);margin-bottom:12px;">Property Information</h4>
+            <div class="row"><span>Address</span><b>N53W34945 Road B, Okauchee, WI 53069</b></div>
+            <div class="row"><span>Check-in</span><b>4:00 PM</b></div>
+            <div class="row"><span>Check-out</span><b>10:00 AM</b></div>
+            <div class="row"><span>Max Guests</span><b>7</b></div>
+            <div class="row"><span>Max Vehicles</span><b>3</b></div>
+            <div class="row"><span>Max Stay</span><b>3 nights</b></div>
+            <div class="row"><span>Property Manager</span><b>Susan Haise — 414-397-2882</b></div>
+            <div class="row"><span>Wisconsin DNR</span><b>1-800-943-0003</b></div>
+          </div>
+          <div class="panel-box danger-zone">
+            <h4>Danger Zone</h4>
+            <p style="font-size:.85rem;color:var(--medium-gray);margin-bottom:12px;">These actions cannot be undone.</p>
+            <button class="btn btn-danger btn-sm" id="clearBlocked2Btn" style="margin-bottom:10px;">Clear All Blocked Dates</button><br>
+            <button class="btn btn-danger btn-sm" id="clearBookingsBtn">Clear All Bookings</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- generic modal + toast -->
+<div class="modal-overlay" id="adminModal"><div class="modal-box" id="adminModalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- storage ---------- */
+  var LS_BOOKINGS="ebg_bookings", LS_BLOCKED="ebg_blocked_dates", LS_PW="ebg_admin_pw";
+  var SS_AUTH="ebg_admin_auth";
+  // Guarded write: never lets a QuotaExceededError (or disabled storage) throw
+  // unhandled and silently abort the handler. Returns true on success.
+  function safeSet(key,val){
+    try{ localStorage.setItem(key,val); return true; }
+    catch(e){ toast("⚠️ Browser storage is full — change NOT saved. Export bookings in Settings, then clear old ones to free space."); return false; }
+  }
+  function getBookings(){ if(window.EBGStore) return EBGStore.getBookings(); try{ return JSON.parse(localStorage.getItem(LS_BOOKINGS))||[]; }catch(e){ return []; } }
+  function saveBookings(b){ if(window.EBGStore) return EBGStore.saveBookings(b); return safeSet(LS_BOOKINGS, JSON.stringify(b)); }
+  function getBlocked(){ if(window.EBGStore) return EBGStore.getBlocked(); try{ return JSON.parse(localStorage.getItem(LS_BLOCKED))||[]; }catch(e){ return []; } }
+  function saveBlocked(b){ if(window.EBGStore) return EBGStore.saveBlocked(b); return safeSet(LS_BLOCKED, JSON.stringify(b)); }
+
+  /* ---------- date helpers ---------- */
+  function toISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function parseISO(s){ var p=s.split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+  function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function todayISO(){ return toISO(new Date()); }
+  function prettyDate(iso){ if(!iso) return "—"; return parseISO(iso).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"}); }
+  function shortDate(iso){ if(!iso) return "—"; return parseISO(iso).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function initials(r){ var a=(r.firstName||"").trim(), b=(r.lastName||"").trim(); return (((a[0]||"")+(b[0]||"")).toUpperCase())||"?"; }
+
+  /* ============================================================
+     PASSWORD GATE
+     ============================================================ */
+  // Default password is stored obfuscated (btoa) — never as plaintext in source.
+  // DEFAULT_PW === btoa("EBG2024Admin!")
+  var DEFAULT_PW="RUJHMjAyNEFkbWluIQ==";
+  function ensurePw(){ if(!localStorage.getItem(LS_PW)){ localStorage.setItem(LS_PW, DEFAULT_PW); } }
+  ensurePw();
+
+  function showDashboard(){
+    document.getElementById("gate").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    initDashboard();
+  }
+  function tryAuth(){
+    var val=document.getElementById("pwInput").value;
+    var stored=localStorage.getItem(LS_PW);
+    if(btoa(val)===stored){
+      sessionStorage.setItem(SS_AUTH,"1");
+      showDashboard();
+    } else {
+      var box=document.getElementById("gateBox");
+      document.getElementById("gateErr").textContent="Incorrect password";
+      box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
+      document.getElementById("pwInput").value="";
+    }
+  }
+  document.getElementById("enterBtn").addEventListener("click",tryAuth);
+  document.getElementById("pwInput").addEventListener("keydown",function(e){ if(e.key==="Enter") tryAuth(); });
+  document.getElementById("logoutBtn").addEventListener("click",function(){
+    sessionStorage.removeItem(SS_AUTH);
+    location.reload();
+  });
+  // Kick off Microsoft 365 sign-in + shared data load. When it resolves, refresh
+  // any views already on screen so the dashboard fills in once SharePoint loads.
+  var _m365 = (window.EBGStore && EBGStore.init) ? EBGStore.init() : Promise.resolve({mode:"local"});
+  Promise.resolve(_m365).then(function(){
+    if(document.getElementById("dashboard").style.display==="block"){
+      try{ renderBookings(); renderAdminCal(); renderChips(); }catch(e){}
+    }
+  });
+  if(sessionStorage.getItem(SS_AUTH)==="1"){ showDashboard(); }
+  else { document.getElementById("pwInput").focus(); }
+
+  /* ============================================================
+     TABS
+     ============================================================ */
+  function initDashboard(){
+    document.querySelectorAll(".nav-tab").forEach(function(t){
+      t.addEventListener("click",function(){
+        var name=t.getAttribute("data-tab");
+        document.querySelectorAll(".nav-tab").forEach(function(x){x.classList.toggle("active",x===t);});
+        document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.toggle("active",p.getAttribute("data-panel")===name);});
+        if(name==="calendar") renderAdminCal();
+        if(name==="blocked"){ renderBlockedCal(); renderChips(); }
+      });
+    });
+    renderDowInto("acDow"); renderDowInto("bcDow");
+    renderBookings();
+    bindFilters();
+    bindBlockedControls();
+    bindSettings();
+    // live refresh if booking page writes new bookings in another tab
+    window.addEventListener("storage",function(e){
+      if(e.key===LS_BOOKINGS){ renderBookings(); renderAdminCal(); }
+      if(e.key===LS_BLOCKED){ renderAdminCal(); renderBlockedCal(); renderChips(); }
+    });
+  }
+
+  /* ============================================================
+     TAB 1 — BOOKINGS
+     ============================================================ */
+  var filterStatus="all", searchTerm="", sortBy="newest";
+  function bindFilters(){
+    document.getElementById("statusSeg").addEventListener("click",function(e){
+      var b=e.target.closest("button"); if(!b) return;
+      filterStatus=b.getAttribute("data-status");
+      this.querySelectorAll("button").forEach(function(x){x.classList.toggle("active",x===b);});
+      renderBookings();
+    });
+    document.getElementById("searchInput").addEventListener("input",function(){ searchTerm=this.value.toLowerCase().trim(); renderBookings(); });
+    document.getElementById("sortSelect").addEventListener("change",function(){ sortBy=this.value; renderBookings(); });
+  }
+
+  function getVisibleBookings(){
+    var list=getBookings().filter(function(b){ return b.status!=="deleted"; });
+    if(filterStatus!=="all") list=list.filter(function(b){ return b.status===filterStatus; });
+    if(searchTerm){
+      list=list.filter(function(b){
+        var name=((b.renter.firstName||"")+" "+(b.renter.lastName||"")).toLowerCase();
+        return name.indexOf(searchTerm)>-1 || (b.id||"").toLowerCase().indexOf(searchTerm)>-1;
+      });
+    }
+    list.sort(function(a,b){
+      if(sortBy==="newest") return new Date(b.submittedAt)-new Date(a.submittedAt);
+      if(sortBy==="oldest") return new Date(a.submittedAt)-new Date(b.submittedAt);
+      if(sortBy==="checkin") return parseISO(a.checkIn)-parseISO(b.checkIn);
+      return 0;
+    });
+    return list;
+  }
+
+  function renderBookings(){
+    var wrap=document.getElementById("bookingsList");
+    var list=getVisibleBookings();
+    if(!list.length){
+      wrap.innerHTML='<div class="empty-state"><span class="em">🗒️</span>No bookings match your filters yet.</div>';
+      return;
+    }
+    wrap.innerHTML=list.map(bookingCardHTML).join("");
+    // bind expand + actions
+    list.forEach(function(bk){
+      var card=wrap.querySelector('[data-card="'+bk.id+'"]');
+      card.querySelector(".bc-head").addEventListener("click",function(){ card.classList.toggle("open"); });
+      card.querySelectorAll("[data-act]").forEach(function(btn){
+        btn.addEventListener("click",function(e){ e.stopPropagation(); handleAction(btn.getAttribute("data-act"), bk.id); });
+      });
+      card.querySelectorAll("[data-thumb]").forEach(function(img){
+        img.addEventListener("click",function(e){ e.stopPropagation(); var slot=img.getAttribute("data-thumb"); openDocLightbox(bk.id, slot); });
+      });
+    });
+  }
+
+  function bookingCardHTML(b){
+    var name=esc(b.renter.firstName+" "+b.renter.lastName);
+    var dl=b.documents&&b.documents.driversLicense;
+    var bl=b.documents&&b.documents.boatingLicense;
+    return '<div class="booking-card" data-card="'+b.id+'">'+
+      '<div class="bc-head">'+
+        '<span class="bc-id">'+esc(b.id)+'</span>'+
+        '<span class="bc-name">'+name+'</span>'+
+        '<span class="bc-dates">'+shortDate(b.checkIn)+' → '+shortDate(b.checkOut)+' &nbsp;('+b.nights+'n)</span>'+
+        '<span class="bc-meta">'+
+          '<span class="bc-submitted">Submitted '+prettyDate(b.submittedAt.slice(0,10))+'</span>'+
+          '<span class="badge '+b.status+'">'+b.status+'</span>'+
+          '<span class="bc-chevron">▾</span>'+
+        '</span>'+
+      '</div>'+
+      '<div class="bc-body"><div class="bc-inner">'+
+        '<div class="detail-grid">'+
+          '<div class="detail-block"><h5>Renter</h5>'+
+            '<div class="row"><b>'+name+'</b></div>'+
+            '<div class="row">✉ '+esc(b.renter.email)+'</div>'+
+            '<div class="row">🏢 '+esc(b.renter.department)+'</div>'+
+            '<div class="row">📞 '+esc(b.renter.phone)+'</div>'+
+          '</div>'+
+          '<div class="detail-block"><h5>Emergency Contact</h5>'+
+            '<div class="row"><b>'+esc(b.renter.emergencyContactName)+'</b></div>'+
+            '<div class="row">📞 '+esc(b.renter.emergencyContactPhone)+'</div>'+
+            '<h5 style="margin-top:14px;">Stay</h5>'+
+            '<div class="row">Check-in: <b>'+prettyDate(b.checkIn)+'</b> @ 4:00 PM</div>'+
+            '<div class="row">Check-out: <b>'+prettyDate(b.checkOut)+'</b> @ 10:00 AM</div>'+
+          '</div>'+
+          '<div class="detail-block"><h5>Guests ('+(b.guests.length+1)+' incl. renter)</h5>'+
+            '<ul class="mini-list">'+ (b.guests.length? b.guests.map(function(g){return '<li>'+esc(g.firstName+" "+g.lastName)+' <span class="pill">'+esc(g.type)+'</span></li>';}).join("") : '<li><em>No additional guests</em></li>') +'</ul>'+
+          '</div>'+
+          '<div class="detail-block"><h5>Vehicles ('+b.vehicles.length+')</h5>'+
+            '<ul class="mini-list">'+ (b.vehicles.length? b.vehicles.map(function(v){return '<li>'+esc(v.color+" "+v.make)+' — <b>'+esc(v.licensePlate)+'</b></li>';}).join("") : '<li><em>No vehicles</em></li>') +'</ul>'+
+          '</div>'+
+          '<div class="detail-block"><h5>Amenities Requested</h5>'+
+            '<div class="row">'+(b.amenities.boat?'⚓ Boat Access':'<span style="color:var(--medium-gray)">⚓ Boat — not requested</span>')+'</div>'+
+            '<div class="row">'+(b.amenities.waveRunners?'🌊 Wave Runners':'<span style="color:var(--medium-gray)">🌊 Wave Runners — not requested</span>')+'</div>'+
+          '</div>'+
+          '<div class="detail-block"><h5>Pricing</h5>'+
+            '<div class="row">Cleaning Fee: <b>$'+b.pricing.cleaningFee+'</b></div>'+
+            (b.pricing.watercraftGas?'<div class="row">Watercraft Gas: <b>$'+b.pricing.watercraftGas+'</b></div>':'')+
+            '<div class="row" style="font-size:1.05rem;color:var(--gold-dark);margin-top:4px;">Total: <b>$'+b.pricing.total+'</b></div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="detail-grid">'+
+          '<div class="detail-block"><h5>Documents</h5>'+
+            docBadge("Driver's License", dl, b.id, "driversLicense")+
+            docBadge("Boating License", bl, b.id, "boatingLicense")+
+          '</div>'+
+          '<div class="detail-block"><h5>Agreement</h5>'+
+            '<div class="row">Liability Agreement: '+(b.agreementAcknowledged?'<span class="doc-present">✅ Signed &amp; agreed</span>':'<span class="doc-missing">❌</span>')+'</div>'+
+            '<div class="row">Manual Acknowledged: '+(b.manualAcknowledged?'<span class="doc-present">✅</span>':'<span class="doc-missing">❌</span>')+'</div>'+
+            (b.signature?'<div class="sig-display" style="margin-top:8px;"><img src="'+b.signature+'" alt="signature"></div>':'')+
+          '</div>'+
+        '</div>'+
+        (b.adminNotes?'<div class="detail-block" style="margin-top:6px;"><h5>Admin Notes</h5><div class="row">'+esc(b.adminNotes)+'</div></div>':'')+
+        (b.rejectionReason?'<div class="detail-block" style="margin-top:6px;"><h5>Rejection Reason</h5><div class="row" style="color:var(--danger)">'+esc(b.rejectionReason)+'</div></div>':'')+
+        '<div class="action-bar">'+
+          '<button class="btn btn-success btn-sm" data-act="approve">✅ Approve</button>'+
+          '<button class="btn btn-danger btn-sm" data-act="reject">❌ Reject</button>'+
+          '<button class="btn btn-gold btn-sm" data-act="confirmEmail">✉️ Send Confirmation</button>'+
+          '<button class="btn btn-outline btn-sm" data-act="contact">✉️ Contact Renter</button>'+
+          '<button class="btn btn-ghost btn-sm" data-act="guests">👤 View Guests</button>'+
+          '<button class="btn btn-ghost btn-sm" data-act="agreement">📋 View Agreement</button>'+
+          '<button class="btn btn-ghost btn-sm" data-act="delete" style="color:var(--danger)">🗑️ Delete</button>'+
+        '</div>'+
+      '</div></div>'+
+    '</div>';
+  }
+  function docBadge(label, doc, id, slot){
+    if(doc){
+      var thumb = doc.type && doc.type.indexOf("image/")===0
+        ? '<img class="thumb" data-thumb="'+slot+'" src="'+doc.data+'" alt="'+esc(label)+'">'
+        : '<span class="pill" style="cursor:pointer" data-thumb="'+slot+'">📄 '+esc(doc.name)+'</span>';
+      return '<div class="doc-badge doc-present">✅ '+esc(label)+thumb+'</div>';
+    }
+    return '<div class="doc-badge doc-missing">❌ '+esc(label)+' — not provided</div>';
+  }
+
+  /* ---------- find booking ---------- */
+  function findBooking(id){ return getBookings().filter(function(b){return b.id===id;})[0]; }
+  function updateBooking(id, fn){
+    var all=getBookings();
+    for(var i=0;i<all.length;i++){ if(all[i].id===id){ fn(all[i]); break; } }
+    saveBookings(all);
+  }
+
+  /* ---------- buffer write (req #8) ---------- */
+  function addBuffersForBooking(b){
+    var blocked=getBlocked();
+    var before=toISO(addDays(parseISO(b.checkIn),-1));
+    var after=toISO(addDays(parseISO(b.checkOut),1));
+    var reason="Booking buffer ("+b.id+")";
+    [before,after].forEach(function(iso){
+      if(!blocked.some(function(x){return x.date===iso;})){ blocked.push({date:iso,reason:reason}); }
+    });
+    saveBlocked(blocked);
+  }
+  function removeBuffersForBooking(id){
+    var blocked=getBlocked().filter(function(x){ return !(x.reason && x.reason.indexOf("buffer ("+id+")")>-1); });
+    saveBlocked(blocked);
+  }
+
+  /* ============================================================
+     ACTIONS
+     ============================================================ */
+  function handleAction(act, id){
+    var b=findBooking(id); if(!b) return;
+    if(act==="approve") doApprove(b);
+    else if(act==="reject") doReject(b);
+    else if(act==="confirmEmail") sendConfirmationEmail(b);
+    else if(act==="contact") contactRenter(b);
+    else if(act==="guests") viewGuests(b);
+    else if(act==="agreement") viewAgreement(b);
+    else if(act==="delete") doDelete(b);
+  }
+
+  function doApprove(b){
+    showModal('<h3>Approve Booking</h3>'+
+      '<p style="color:var(--medium-gray);font-size:.9rem;margin-bottom:10px;">Approving <b>'+esc(b.id)+'</b> for '+esc(b.renter.firstName+" "+b.renter.lastName)+'. The 24-hour buffer dates will be blocked automatically.</p>'+
+      '<label style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);">Admin Notes (optional)</label>'+
+      '<textarea id="approveNotes" placeholder="Internal notes…"></textarea>'+
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-success btn-sm" id="approveConfirm">Confirm Approval</button></div>');
+    document.getElementById("approveConfirm").addEventListener("click",function(){
+      var notes=document.getElementById("approveNotes").value.trim();
+      updateBooking(b.id,function(bk){ bk.status="approved"; bk.adminNotes=notes; bk.rejectionReason=""; });
+      var updated=findBooking(b.id);
+      addBuffersForBooking(updated);
+      hideModal(); renderBookings(); renderAdminCal(); renderChips();
+      toast("Booking approved — buffer dates blocked.");
+    });
+  }
+
+  function doReject(b){
+    showModal('<h3>Reject Booking</h3>'+
+      '<p style="color:var(--medium-gray);font-size:.9rem;margin-bottom:10px;">Rejecting <b>'+esc(b.id)+'</b>. A reason is required and will be included in the notification email.</p>'+
+      '<label style="font-size:.8rem;text-transform:uppercase;letter-spacing:.5px;color:var(--medium-gray);">Rejection Reason *</label>'+
+      '<textarea id="rejectReason" placeholder="Reason for rejection…"></textarea>'+
+      '<div class="modal-err" id="rejectErr"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-danger btn-sm" id="rejectConfirm">Confirm Rejection</button></div>');
+    document.getElementById("rejectConfirm").addEventListener("click",function(){
+      var reason=document.getElementById("rejectReason").value.trim();
+      if(!reason){ document.getElementById("rejectErr").textContent="A rejection reason is required."; return; }
+      removeBuffersForBooking(b.id); // free any previously reserved buffer
+      updateBooking(b.id,function(bk){ bk.status="rejected"; bk.rejectionReason=reason; });
+      hideModal(); renderBookings(); renderAdminCal(); renderChips();
+      toast("Booking rejected.");
+    });
+  }
+
+  function doDelete(b){
+    showModal('<h3>Delete Booking</h3>'+
+      '<p style="font-size:.92rem;margin-bottom:6px;">Are you sure you want to delete <b>'+esc(b.id)+'</b> ('+esc(b.renter.firstName+" "+b.renter.lastName)+')?</p>'+
+      '<p style="color:var(--medium-gray);font-size:.85rem;">This removes it from the dashboard and frees its dates.</p>'+
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-danger btn-sm" id="delConfirm">Delete Booking</button></div>');
+    document.getElementById("delConfirm").addEventListener("click",function(){
+      removeBuffersForBooking(b.id);
+      updateBooking(b.id,function(bk){ bk.status="deleted"; });
+      hideModal(); renderBookings(); renderAdminCal(); renderChips();
+      toast("Booking deleted.");
+    });
+  }
+
+  function viewGuests(b){
+    var rows=b.guests.length? b.guests.map(function(g){return '<li>'+esc(g.firstName+" "+g.lastName)+' <span class="pill">'+esc(g.type)+'</span></li>';}).join("") : '<li><em>No additional guests.</em></li>';
+    showModal('<h3>Guest List — '+esc(b.id)+'</h3>'+
+      '<p style="color:var(--medium-gray);font-size:.88rem;margin-bottom:10px;">'+(b.guests.length+1)+' total occupants (including the renter).</p>'+
+      '<ul class="mini-list"><li><b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> <span class="pill">renter</span></li>'+rows+'</ul>'+
+      '<div class="modal-actions"><button class="btn btn-gold btn-sm" data-cancel>Close</button></div>');
+  }
+
+  function viewAgreement(b){
+    showModal('<h3>Rental Liability Agreement — '+esc(b.id)+'</h3>'+
+      buildAgreementHTML(b.renter.firstName+" "+b.renter.lastName)+
+      '<div style="margin-top:16px;"><h5 style="font-family:Jost;font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;color:var(--gold-dark);">Signature</h5>'+
+      (b.signature?'<div class="sig-display"><img src="'+b.signature+'" alt="signature"></div>':'<em>No signature on file.</em>')+
+      '<p style="font-size:.85rem;margin-top:8px;">Signed by <b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department)+'</p>'+
+      '</div><div class="modal-actions"><button class="btn btn-gold btn-sm" data-cancel>Close</button></div>');
+  }
+
+  function openDocLightbox(id, slot){
+    var b=findBooking(id); if(!b) return;
+    var doc=b.documents&&b.documents[slot]; if(!doc) return;
+    var content;
+    if(doc.type && doc.type.indexOf("image/")===0){
+      content='<div class="lightbox"><img src="'+doc.data+'" alt="'+esc(doc.name)+'"></div>';
+    } else {
+      content='<div class="lightbox"><p style="margin-bottom:12px;">📄 '+esc(doc.name)+'</p>'+
+        '<iframe src="'+doc.data+'" style="width:100%;height:60vh;border:1px solid var(--border);border-radius:8px;"></iframe>'+
+        '<p style="margin-top:10px;"><a class="btn btn-outline btn-sm" href="'+doc.data+'" download="'+esc(doc.name)+'">⬇ Download</a></p></div>';
+    }
+    showModal('<h3>'+esc(slot==="driversLicense"?"Driver's License":"Boating License")+'</h3>'+content+
+      '<div class="modal-actions"><button class="btn btn-gold btn-sm" data-cancel>Close</button></div>');
+  }
+
+  /* ---------- emails ---------- */
+  function sendConfirmationEmail(b){
+    var approved=b.status==="approved";
+    var rejected=b.status==="rejected";
+    var statusWord=approved?"Approved":(rejected?"Rejected":"Update");
+    if(!approved && !rejected){
+      // ask admin to decide tone but still allow
+      statusWord="Update";
+    }
+    var subject="EBG Lake House Booking "+b.id+" — "+statusWord;
+    var lines=[];
+    lines.push("Dear "+b.renter.firstName+",");
+    lines.push("");
+    if(approved){
+      lines.push("Great news — your booking request ("+b.id+") has been APPROVED.");
+    } else if(rejected){
+      lines.push("Thank you for your interest in the Edgeless Beauty Group Lake House.");
+      lines.push("Unfortunately, your booking request ("+b.id+") could not be approved at this time.");
+      if(b.rejectionReason){ lines.push("Reason: "+b.rejectionReason); }
+    } else {
+      lines.push("Here is an update regarding your booking request ("+b.id+").");
+    }
+    lines.push("");
+    lines.push("STAY DETAILS");
+    lines.push("Check-in:  "+prettyDate(b.checkIn)+" at 4:00 PM");
+    lines.push("Check-out: "+prettyDate(b.checkOut)+" at 10:00 AM");
+    lines.push("Nights:    "+b.nights);
+    lines.push("");
+    lines.push("PRICING");
+    lines.push("Cleaning Fee:        $"+b.pricing.cleaningFee);
+    if(b.pricing.watercraftGas){ lines.push("Watercraft Gas Fee:  $"+b.pricing.watercraftGas); }
+    lines.push("Total:               $"+b.pricing.total);
+    lines.push("");
+    lines.push("HOUSE RULES REMINDER");
+    lines.push("- Maximum occupancy 8; maximum 3 vehicles.");
+    lines.push("- No smoking, no parties. Quiet hours 10:00 PM - 7:00 AM.");
+    lines.push("- All watercraft operators must be licensed with 50+ logged hours; no OUI.");
+    lines.push("");
+    if(approved){
+      lines.push("Your keyless entry code will be sent to you 24 hours before arrival.");
+      lines.push("");
+    }
+    lines.push("Questions? Contact our property manager, Susan Haise, at 414-397-2882.");
+    lines.push("");
+    lines.push("Warm regards,");
+    lines.push("Edgeless Beauty Group Lake House");
+    lines.push("N53W34945 Road B, Okauchee, WI 53069");
+    var href="mailto:"+encodeURIComponent(b.renter.email)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(lines.join("\r\n"));
+    window.location.href=href;
+  }
+  function contactRenter(b){
+    var subject="EBG Lake House Booking "+b.id;
+    window.location.href="mailto:"+encodeURIComponent(b.renter.email)+"?subject="+encodeURIComponent(subject);
+  }
+
+  /* ============================================================
+     CALENDAR (admin view + blocked toggler share helpers)
+     ============================================================ */
+  var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function renderDowInto(id){ document.getElementById(id).innerHTML=DOW.map(function(d){return '<div class="cal-dow">'+d+'</div>';}).join(""); }
+
+  // rich status map for admin calendar
+  function buildAdminMap(){
+    var map={}; // iso -> {type, booking}
+    getBookings().forEach(function(b){
+      if(b.status==="approved"||b.status==="pending"){
+        var d=parseISO(b.checkIn), end=parseISO(b.checkOut);
+        while(d<=end){ var iso=toISO(d); if(!map[iso]||map[iso].type==="buffer"){ map[iso]={type:b.status,booking:b}; } d=addDays(d,1); }
+      }
+    });
+    getBookings().forEach(function(b){
+      if(b.status==="approved"){
+        [toISO(addDays(parseISO(b.checkIn),-1)),toISO(addDays(parseISO(b.checkOut),1))].forEach(function(iso){
+          if(!map[iso]) map[iso]={type:"buffer",booking:b};
+        });
+      }
+    });
+    getBlocked().forEach(function(x){
+      if(map[x.date]) return;
+      var isBuffer=x.reason&&/buffer/i.test(x.reason);
+      map[x.date]={type:isBuffer?"buffer":"blocked",reason:x.reason};
+    });
+    return map;
+  }
+
+  var acY, acM;
+  function renderAdminCal(){
+    if(acY===undefined){ var n=new Date(); acY=n.getFullYear(); acM=n.getMonth(); }
+    var map=buildAdminMap();
+    document.getElementById("acTitle").textContent=MONTHS[acM]+" "+acY;
+    var first=new Date(acY,acM,1), startDow=first.getDay(), dim=new Date(acY,acM+1,0).getDate(), tIso=todayISO();
+    var html="";
+    for(var i=0;i<startDow;i++) html+='<div class="cal-cell empty"></div>';
+    for(var day=1;day<=dim;day++){
+      var iso=toISO(new Date(acY,acM,day));
+      var info=map[iso]; var cls="cal-cell", init="", click="";
+      if(info){
+        cls+=" "+info.type;
+        if((info.type==="approved"||info.type==="pending")&&info.booking){ init='<span class="cal-init">'+esc(initials(info.booking.renter))+'</span>'; cls+=" clickable"; click=' data-bk="'+info.booking.id+'"'; }
+      }
+      if(iso===tIso) cls+=" today";
+      html+='<div class="'+cls+'"'+click+'>'+day+init+'</div>';
+    }
+    var grid=document.getElementById("acGrid");
+    grid.innerHTML=html;
+    grid.querySelectorAll("[data-bk]").forEach(function(c){
+      c.addEventListener("click",function(){ var b=findBooking(c.getAttribute("data-bk")); if(b) bookingPopup(b); });
+    });
+  }
+  document.getElementById("acPrev").addEventListener("click",function(){ acM--; if(acM<0){acM=11;acY--;} renderAdminCal(); });
+  document.getElementById("acNext").addEventListener("click",function(){ acM++; if(acM>11){acM=0;acY++;} renderAdminCal(); });
+
+  function bookingPopup(b){
+    showModal('<h3>'+esc(b.id)+' <span class="badge '+b.status+'" style="font-size:.66rem;vertical-align:middle;">'+b.status+'</span></h3>'+
+      '<div class="row" style="margin-bottom:4px;"><b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department)+'</div>'+
+      '<div class="row">📅 '+prettyDate(b.checkIn)+' → '+prettyDate(b.checkOut)+' ('+b.nights+'n)</div>'+
+      '<div class="row">✉ '+esc(b.renter.email)+' &nbsp; 📞 '+esc(b.renter.phone)+'</div>'+
+      '<div class="row">👥 '+(b.guests.length+1)+' guests &nbsp; 🚗 '+b.vehicles.length+' vehicles</div>'+
+      '<div class="row">'+(b.amenities.boat?'⚓ Boat ':'')+(b.amenities.waveRunners?'🌊 Wave Runners':'')+(!b.amenities.boat&&!b.amenities.waveRunners?'No watercraft requested':'')+'</div>'+
+      '<div class="row" style="color:var(--gold-dark);margin-top:6px;">Total: <b>$'+b.pricing.total+'</b></div>'+
+      '<div class="modal-actions"><button class="btn btn-gold btn-sm" data-cancel>Close</button></div>');
+  }
+
+  /* ============================================================
+     TAB 3 — BLOCKED DATES
+     ============================================================ */
+  var bcY, bcM;
+  function renderBlockedCal(){
+    if(bcY===undefined){ var n=new Date(); bcY=n.getFullYear(); bcM=n.getMonth(); }
+    var map=buildAdminMap();
+    document.getElementById("bcTitle").textContent=MONTHS[bcM]+" "+bcY;
+    var first=new Date(bcY,bcM,1), startDow=first.getDay(), dim=new Date(bcY,bcM+1,0).getDate(), tIso=todayISO();
+    var html="";
+    for(var i=0;i<startDow;i++) html+='<div class="cal-cell empty"></div>';
+    for(var day=1;day<=dim;day++){
+      var iso=toISO(new Date(bcY,bcM,day));
+      var info=map[iso], cls="cal-cell clickable";
+      if(info){
+        if(info.type==="blocked") cls="cal-cell toggle-on clickable";
+        else if(info.type==="approved") cls="cal-cell approved";
+        else if(info.type==="pending") cls="cal-cell pending";
+        else if(info.type==="buffer") cls="cal-cell buffer";
+      }
+      if(iso===tIso) cls+=" today";
+      html+='<div class="'+cls+'" data-iso="'+iso+'">'+day+'</div>';
+    }
+    var grid=document.getElementById("bcGrid");
+    grid.innerHTML=html;
+    grid.querySelectorAll("[data-iso]").forEach(function(c){
+      c.addEventListener("click",function(){ toggleBlocked(c.getAttribute("data-iso")); });
+    });
+  }
+  document.getElementById("bcPrev").addEventListener("click",function(){ bcM--; if(bcM<0){bcM=11;bcY--;} renderBlockedCal(); });
+  document.getElementById("bcNext").addEventListener("click",function(){ bcM++; if(bcM>11){bcM=0;bcY++;} renderBlockedCal(); });
+
+  function toggleBlocked(iso){
+    var map=buildAdminMap(), info=map[iso];
+    // booking & auto-buffer days are managed automatically — not manually toggleable
+    if(info && (info.type==="approved"||info.type==="pending")){ toast("That date belongs to a booking."); return; }
+    if(info && info.type==="buffer"){ toast("Buffer dates are managed automatically around approved bookings."); return; }
+    var blocked=getBlocked();
+    var idx=-1;
+    for(var i=0;i<blocked.length;i++){ if(blocked[i].date===iso){ idx=i; break; } }
+    if(idx>-1){ blocked.splice(idx,1); }
+    else { blocked.push({date:iso,reason:"Manual block"}); }
+    saveBlocked(blocked);
+    renderBlockedCal(); renderChips(); renderAdminCal();
+  }
+
+  function bindBlockedControls(){
+    document.getElementById("blockRangeBtn").addEventListener("click",function(){
+      var s=document.getElementById("rangeStart").value, e=document.getElementById("rangeEnd").value;
+      var reason=document.getElementById("rangeReason").value;
+      var err=document.getElementById("rangeErr"); err.textContent="";
+      if(!s||!e){ err.textContent="Please choose both a start and end date."; return; }
+      if(parseISO(e)<parseISO(s)){ err.textContent="End date must be on or after the start date."; return; }
+      var blocked=getBlocked(), d=parseISO(s), end=parseISO(e), added=0;
+      while(d<=end){
+        var iso=toISO(d);
+        if(!blocked.some(function(x){return x.date===iso;})){ blocked.push({date:iso,reason:reason}); added++; }
+        d=addDays(d,1);
+      }
+      if(saveBlocked(blocked)){
+        document.getElementById("rangeStart").value=""; document.getElementById("rangeEnd").value="";
+        renderBlockedCal(); renderChips(); renderAdminCal();
+        toast(added+" date"+(added===1?"":"s")+" blocked.");
+      }
+    });
+    document.getElementById("clearBlockedBtn").addEventListener("click",confirmClearBlocked);
+  }
+
+  function renderChips(){
+    var box=document.getElementById("blockedChips");
+    var blocked=getBlocked().slice().sort(function(a,b){ return parseISO(a.date)-parseISO(b.date); });
+    if(!blocked.length){ box.innerHTML='<span style="color:var(--medium-gray);font-size:.85rem;">No blocked dates.</span>'; return; }
+    // group consecutive dates with same reason
+    var groups=[], cur=null;
+    blocked.forEach(function(x){
+      if(cur && x.reason===cur.reason && toISO(addDays(parseISO(cur.end),1))===x.date){ cur.end=x.date; }
+      else { cur={start:x.date,end:x.date,reason:x.reason}; groups.push(cur); }
+    });
+    box.innerHTML=groups.map(function(g){
+      var label = g.start===g.end ? shortDate(g.start) : shortDate(g.start)+" – "+shortDate(g.end);
+      return '<span class="chip">'+label+' <span class="chip-reason">'+esc(g.reason)+'</span>'+
+        '<button class="chip-x" data-s="'+g.start+'" data-e="'+g.end+'" title="Remove">×</button></span>';
+    }).join("");
+    box.querySelectorAll(".chip-x").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var s=btn.getAttribute("data-s"), e=btn.getAttribute("data-e");
+        var keep=getBlocked().filter(function(x){ return parseISO(x.date)<parseISO(s)||parseISO(x.date)>parseISO(e); });
+        saveBlocked(keep);
+        renderChips(); renderBlockedCal(); renderAdminCal();
+      });
+    });
+  }
+
+  function confirmClearBlocked(){
+    showModal('<h3>Clear All Blocked Dates</h3>'+
+      '<p style="font-size:.92rem;">This will remove every blocked date, including auto-generated booking buffers. Continue?</p>'+
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-danger btn-sm" id="clrBlkConfirm">Clear All</button></div>');
+    document.getElementById("clrBlkConfirm").addEventListener("click",function(){
+      saveBlocked([]); hideModal(); renderChips(); renderBlockedCal(); renderAdminCal(); toast("All blocked dates cleared.");
+    });
+  }
+
+  /* ============================================================
+     TAB 4 — SETTINGS
+     ============================================================ */
+  function bindSettings(){
+    document.getElementById("changePwBtn").addEventListener("click",function(){
+      var cur=document.getElementById("curPw").value, nw=document.getElementById("newPw").value, cf=document.getElementById("confPw").value;
+      var msg=document.getElementById("pwChangeMsg"); msg.style.color="var(--danger)";
+      if(btoa(cur)!==localStorage.getItem(LS_PW)){ msg.textContent="Current password is incorrect."; return; }
+      if(nw.length<6){ msg.textContent="New password must be at least 6 characters."; return; }
+      if(nw!==cf){ msg.textContent="New passwords do not match."; return; }
+      localStorage.setItem(LS_PW, btoa(nw));
+      document.getElementById("curPw").value=""; document.getElementById("newPw").value=""; document.getElementById("confPw").value="";
+      msg.style.color="var(--success)"; msg.textContent="Password updated successfully.";
+      toast("Admin password updated.");
+    });
+    document.getElementById("exportBtn").addEventListener("click",function(){
+      var data=JSON.stringify(getBookings(),null,2);
+      var blob=new Blob([data],{type:"application/json"});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url; a.download="ebg_bookings_"+todayISO()+".json";
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      toast("Bookings exported.");
+    });
+    document.getElementById("clearBlocked2Btn").addEventListener("click",confirmClearBlocked);
+    document.getElementById("clearBookingsBtn").addEventListener("click",confirmClearBookings);
+  }
+
+  function confirmClearBookings(){
+    showModal('<h3>Clear All Bookings</h3>'+
+      '<p style="font-size:.92rem;margin-bottom:6px;">This permanently deletes <b>every</b> booking record. This cannot be undone.</p>'+
+      '<p style="color:var(--medium-gray);font-size:.85rem;margin-bottom:8px;">Type <b>DELETE ALL</b> to confirm.</p>'+
+      '<input type="text" id="delAllInput" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:Jost;letter-spacing:1px;">'+
+      '<div class="modal-err" id="delAllErr"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-danger btn-sm" id="delAllConfirm">Delete All Bookings</button></div>');
+    document.getElementById("delAllConfirm").addEventListener("click",function(){
+      if(document.getElementById("delAllInput").value.trim()!=="DELETE ALL"){ document.getElementById("delAllErr").textContent='You must type "DELETE ALL" exactly.'; return; }
+      saveBookings([]); hideModal(); renderBookings(); renderAdminCal(); toast("All bookings deleted.");
+    });
+  }
+
+  /* ============================================================
+     AGREEMENT TEXT (shared with booking.html)
+     ============================================================ */
+  function buildAgreementHTML(renterName){
+    return '<div class="doc-viewer">'+
+      '<h3>LAKE HOUSE RENTAL LIABILITY AGREEMENT</h3>'+
+      '<p class="doc-meta">Edgeless Beauty Group &nbsp;•&nbsp; Okauchee Lake, Wisconsin</p>'+
+      '<p>This Rental Liability Agreement is entered into by and between Edgeless Beauty Group ("Owner") and <strong>'+esc(renterName)+'</strong> ("Renter").</p>'+
+      '<h4>1. Assumption of Risk</h4><ul>'+
+        '<li>The Renter acknowledges that use of the Lake House, the lake, docks, watercraft, and all recreational equipment involves inherent and unavoidable risks, including but not limited to drowning, bodily injury, illness, and property damage.</li>'+
+        '<li>The Renter voluntarily and knowingly assumes all such risks, both known and unknown, on behalf of themselves and every guest in their party.</li>'+
+        '<li>The Renter affirms they and their guests are in good health and physically capable of the activities they choose to undertake.</li></ul>'+
+      '<h4>2. Release and Waiver of Liability</h4><ul>'+
+        '<li>The Renter hereby releases, waives, and discharges Edgeless Beauty Group and its owners, officers, employees, and agents from any and all liability for any loss, damage, injury, or death arising from use of the property or its amenities.</li>'+
+        '<li>This release applies to the Renter, all guests, invitees, and minor children in the Renter\'s care.</li>'+
+        '<li>This waiver is binding to the fullest extent permitted by Wisconsin law.</li></ul>'+
+      '<h4>3. Rules of Conduct</h4><ul>'+
+        '<li>Maximum occupancy and the three (3) vehicle limit must be observed at all times.</li>'+
+        '<li>No smoking is permitted inside the residence. No parties, events, or commercial gatherings are allowed.</li>'+
+        '<li>Quiet hours are observed from 10:00 PM to 7:00 AM in respect of neighbors.</li>'+
+        '<li>The Renter is solely responsible for the conduct of every guest and invitee during the rental period.</li></ul>'+
+      '<h4>4. Watercraft &amp; Recreational Equipment</h4><ul>'+
+        '<li>Operation of the boat or wave runners requires a valid boating license and a minimum of fifty (50) logged hours of boating experience, and is subject to advance approval by the Owner.</li>'+
+        '<li>Operating any watercraft under the influence of alcohol or drugs (OUI) is strictly prohibited and will result in immediate termination of the rental.</li>'+
+        '<li>All occupants of any watercraft must wear a properly fitted, U.S. Coast Guard-approved life jacket as required by Wisconsin law.</li></ul>'+
+      '<h4>5. Property Damage &amp; Indemnification</h4><ul>'+
+        '<li>The Renter is financially responsible for any damage to the property, watercraft, furnishings, or equipment occurring during the rental period, normal wear excepted.</li>'+
+        '<li>The Renter agrees to indemnify and hold harmless the Owner against all claims, demands, costs, and expenses (including reasonable attorney\'s fees) arising from the Renter\'s use of the property.</li>'+
+        '<li>A mandatory cleaning fee of $300 applies to every stay. A watercraft gas fee of $100 applies when watercraft is requested.</li></ul>'+
+      '<h4>6. Occupancy &amp; Guests</h4><ul>'+
+        '<li>Only guests registered on this booking may occupy the property. Unregistered overnight guests are not permitted.</li>'+
+        '<li>The Renter must ensure that all minors are supervised at all times when on or near the water.</li>'+
+        '<li>Guests under the age of 16 must have their own properly fitted life jacket available.</li></ul>'+
+      '<h4>7. Acknowledgment &amp; Governing Law</h4><ul>'+
+        '<li>This Agreement is governed by and construed in accordance with the laws of the State of Wisconsin.</li>'+
+        '<li>If any provision is held unenforceable, the remaining provisions shall continue in full force and effect.</li>'+
+        '<li>By signing below, the Renter affirms they have read, understood, and voluntarily agree to all terms of this Agreement.</li></ul>'+
+      '</div>';
+  }
+
+  /* ============================================================
+     MODAL + TOAST
+     ============================================================ */
+  var overlay=document.getElementById("adminModal"), box=document.getElementById("adminModalBox");
+  function showModal(html){
+    box.innerHTML='<button class="modal-close" data-cancel>×</button>'+html;
+    overlay.classList.add("open");
+    box.querySelectorAll("[data-cancel]").forEach(function(b){ b.addEventListener("click",hideModal); });
+  }
+  function hideModal(){ overlay.classList.remove("open"); box.innerHTML=""; }
+  overlay.addEventListener("click",function(e){ if(e.target===overlay) hideModal(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") hideModal(); });
+
+  var toastTimer;
+  function toast(msg){
+    var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); },2600);
+  }
+
+})();
+</script>
+</body>
+</html>

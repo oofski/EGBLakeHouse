@@ -1,0 +1,11 @@
+# Node / build artifacts (desktop app)
+node_modules/
+desktop/node_modules/
+desktop/dist/
+desktop/data/
+desktop/testdata/
+
+# Logs / OS cruft
+*.log
+.DS_Store
+Thumbs.db
