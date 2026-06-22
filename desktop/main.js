@@ -14,7 +14,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, shell, dialog } = require("electron");
 const { startServer } = require("./server");
 
 let serverHandle = null;
@@ -204,9 +204,43 @@ function createWindow(port) {
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 
+// ---- auto-update (GitHub Releases via electron-updater) -----------------
+// In the packaged app, checks GitHub Releases for a newer version, downloads it
+// in the background, and offers to restart to apply. New versions are published
+// automatically by the GitHub Actions build whenever we push changes.
+function setupAutoUpdate() {
+  if (!app.isPackaged) return; // only the installed app self-updates
+  let autoUpdater;
+  try { autoUpdater = require("electron-updater").autoUpdater; }
+  catch (e) { console.warn("[update] electron-updater unavailable:", e && e.message); return; }
+  try {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on("error", (e) => console.warn("[update] error:", e && e.message));
+    autoUpdater.on("update-available", (info) => console.log("[update] downloading v" + (info && info.version)));
+    autoUpdater.on("update-downloaded", (info) => {
+      const v = info && info.version ? " (v" + info.version + ")" : "";
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        buttons: ["Restart now", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+        title: "Update ready",
+        message: "A new version of EBG Lake House is ready" + v + ".",
+        detail: "It installs when you restart the app. Restart now?"
+      }).then((res) => { if (res.response === 0) autoUpdater.quitAndInstall(); }).catch(() => {});
+    });
+    autoUpdater.checkForUpdates().catch((e) => console.warn("[update] check failed:", e && e.message));
+    setInterval(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 60 * 60 * 1000); // hourly while open
+  } catch (e) {
+    console.warn("[update] setup failed:", e && e.message);
+  }
+}
+
 app.whenReady().then(() => {
   serverHandle = startServerWithFallback(app.getPath("userData"), 4399);
   createWindow(serverHandle.port);
+  setupAutoUpdate();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(serverHandle.port);

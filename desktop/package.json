@@ -9,6 +9,7 @@
     "dist": "electron-builder --win"
   },
   "dependencies": {
+    "electron-updater": "^6.3.9",
     "express": "^4.22.2",
     "nodemailer": "^6.9.14",
     "qrcode": "^1.5.4"
@@ -20,6 +21,9 @@
   "build": {
     "appId": "com.ebg.lakehouse",
     "productName": "EBG Lake House",
+    "publish": [
+      { "provider": "github", "owner": "oofski", "repo": "EGBLakeHouse", "releaseType": "release" }
+    ],
     "directories": {
       "output": "dist",
       "buildResources": "build"

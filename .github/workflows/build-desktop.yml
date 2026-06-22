@@ -7,6 +7,10 @@ on:
       - 'desktop/**'
       - '.github/workflows/build-desktop.yml'
 
+# Needed so the build can publish a GitHub Release (the auto-update feed).
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -23,11 +27,22 @@ jobs:
         working-directory: desktop
         run: npm install
 
-      - name: Build Windows app
+      # Auto-incrementing version so every push becomes a newer release that
+      # installed apps will pick up. github.run_number only ever increases.
+      - name: Set version
         working-directory: desktop
-        run: npm run dist
+        run: npm version 1.0.${{ github.run_number }} --no-git-tag-version --allow-same-version
 
-      - name: Upload Windows installer
+      # Build the Windows installer AND publish it to GitHub Releases
+      # (installer + latest.yml). electron-updater reads this feed.
+      - name: Build & publish
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish always
+
+      # Also keep the installer as a downloadable artifact for convenience.
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: EBG-Lake-House-Windows

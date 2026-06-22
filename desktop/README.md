@@ -109,3 +109,18 @@ DATA_DIR=./data PORT=4399 node server.js
 
 Then open `http://<computer-ip>:4399/` on a phone (booking page) or
 `http://<computer-ip>:4399/admin` for the dashboard.
+
+## Automatic updates
+
+The installed app keeps itself up to date. When changes are pushed, GitHub
+Actions builds a new version and publishes it as a GitHub Release. Each running
+copy checks that feed (on launch and hourly), downloads any newer version in the
+background, and shows a "Restart now / Later" prompt — choosing Restart applies
+the update; otherwise it installs the next time the app is restarted.
+
+Notes:
+- Only the **installed** (NSIS) build auto-updates; the portable .exe does not.
+- Updates are unsigned, so the **first** manual install may show a Windows
+  SmartScreen notice ("More info" -> "Run anyway"); auto-updates afterward are silent.
+- Releases are published to this repo's public Releases page (the app contains
+  no secrets — SMTP settings live only in the local settings.json).
