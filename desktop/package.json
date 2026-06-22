@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "express": "^4.22.2",
+    "nodemailer": "^6.9.14",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
@@ -20,7 +21,8 @@
     "appId": "com.ebg.lakehouse",
     "productName": "EBG Lake House",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "**/*",
@@ -28,6 +30,7 @@
       "!testdata/**"
     ],
     "win": {
+      "icon": "build/icon.png",
       "target": [
         "nsis",
         "portable"

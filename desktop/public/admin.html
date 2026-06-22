@@ -507,8 +507,11 @@
           '<div class="detail-block"><h5>Renter</h5>'+
             '<div class="row"><b>'+name+'</b></div>'+
             '<div class="row">✉ '+esc(b.renter.email)+'</div>'+
-            '<div class="row">🏢 '+esc(b.renter.department)+'</div>'+
+            '<div class="row">🏢 Business: '+esc(b.renter.department||"—")+'</div>'+
             '<div class="row">📞 '+esc(b.renter.phone)+'</div>'+
+            '<h5 style="margin-top:14px;">Booking</h5>'+
+            '<div class="row">Booking Reason: <b>'+esc(b.purpose||"—")+'</b></div>'+
+            (b.purpose==="Team Use"?'<div class="row">Employee: <b>'+esc(b.employeeName||"—")+'</b></div>':'')+
           '</div>'+
           '<div class="detail-block"><h5>Emergency Contact</h5>'+
             '<div class="row"><b>'+esc(b.renter.emergencyContactName)+'</b></div>'+
@@ -529,7 +532,7 @@
           '</div>'+
           '<div class="detail-block"><h5>Pricing</h5>'+
             '<div class="row">Cleaning Fee: <b>$'+b.pricing.cleaningFee+'</b></div>'+
-            (b.pricing.watercraftGas?'<div class="row">Watercraft Gas: <b>$'+b.pricing.watercraftGas+'</b></div>':'')+
+            (b.pricing.watercraftGas?'<div class="row">Gas Deposit: <b>$'+b.pricing.watercraftGas+'</b></div>':'')+
             '<div class="row" style="font-size:1.05rem;color:var(--gold-dark);margin-top:4px;">Total: <b>$'+b.pricing.total+'</b></div>'+
           '</div>'+
         '</div>'+
@@ -665,7 +668,7 @@
       buildAgreementHTML(b.renter.firstName+" "+b.renter.lastName)+
       '<div style="margin-top:16px;"><h5 style="font-family:Jost;font-size:.74rem;text-transform:uppercase;letter-spacing:.7px;color:var(--gold-dark);">Signature</h5>'+
       (b.signature?'<div class="sig-display"><img src="'+b.signature+'" alt="signature"></div>':'<em>No signature on file.</em>')+
-      '<p style="font-size:.85rem;margin-top:8px;">Signed by <b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department)+'</p>'+
+      '<p style="font-size:.85rem;margin-top:8px;">Signed by <b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department||"—")+'</p>'+
       '</div><div class="modal-actions"><button class="btn btn-gold btn-sm" data-cancel>Close</button></div>');
   }
 
@@ -712,9 +715,14 @@
     lines.push("Check-out: "+prettyDate(b.checkOut)+" at 10:00 AM");
     lines.push("Nights:    "+b.nights);
     lines.push("");
+    lines.push("BOOKING DETAILS");
+    lines.push("Booking Reason:      "+(b.purpose||"—"));
+    if(b.purpose==="Team Use"){ lines.push("Employee:            "+(b.employeeName||"—")); }
+    lines.push("Business:            "+(b.renter.department||"—"));
+    lines.push("");
     lines.push("PRICING");
     lines.push("Cleaning Fee:        $"+b.pricing.cleaningFee);
-    if(b.pricing.watercraftGas){ lines.push("Watercraft Gas Fee:  $"+b.pricing.watercraftGas); }
+    if(b.pricing.watercraftGas){ lines.push("Gas Deposit:         $"+b.pricing.watercraftGas); }
     lines.push("Total:               $"+b.pricing.total);
     lines.push("");
     lines.push("HOUSE RULES REMINDER");
@@ -799,7 +807,7 @@
 
   function bookingPopup(b){
     showModal('<h3>'+esc(b.id)+' <span class="badge '+b.status+'" style="font-size:.66rem;vertical-align:middle;">'+b.status+'</span></h3>'+
-      '<div class="row" style="margin-bottom:4px;"><b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department)+'</div>'+
+      '<div class="row" style="margin-bottom:4px;"><b>'+esc(b.renter.firstName+" "+b.renter.lastName)+'</b> — '+esc(b.renter.department||"—")+'</div>'+
       '<div class="row">📅 '+prettyDate(b.checkIn)+' → '+prettyDate(b.checkOut)+' ('+b.nights+'n)</div>'+
       '<div class="row">✉ '+esc(b.renter.email)+' &nbsp; 📞 '+esc(b.renter.phone)+'</div>'+
       '<div class="row">👥 '+(b.guests.length+1)+' guests &nbsp; 🚗 '+b.vehicles.length+' vehicles</div>'+
@@ -979,7 +987,7 @@
       '<h4>5. Property Damage &amp; Indemnification</h4><ul>'+
         '<li>The Renter is financially responsible for any damage to the property, watercraft, furnishings, or equipment occurring during the rental period, normal wear excepted.</li>'+
         '<li>The Renter agrees to indemnify and hold harmless the Owner against all claims, demands, costs, and expenses (including reasonable attorney\'s fees) arising from the Renter\'s use of the property.</li>'+
-        '<li>A mandatory cleaning fee of $300 applies to every stay. A watercraft gas fee of $100 applies when watercraft is requested.</li></ul>'+
+        '<li>A mandatory cleaning fee of $250 applies to every stay. A $100 gas deposit applies when watercraft is requested.</li></ul>'+
       '<h4>6. Occupancy &amp; Guests</h4><ul>'+
         '<li>Only guests registered on this booking may occupy the property. Unregistered overnight guests are not permitted.</li>'+
         '<li>The Renter must ensure that all minors are supervised at all times when on or near the water.</li>'+

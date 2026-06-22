@@ -34,6 +34,11 @@ function startServer(opts) {
   const port = Number(opts.port) || Number(process.env.PORT) || 4399;
   const store = initStore(opts.dataDir);
 
+  // Optional callback fired after a booking is successfully created (POST
+  // /api/bookings). Electron supplies this to send a notification email.
+  // The server must never crash when run standalone/headless without one.
+  const onBookingCreated = opts.onBookingCreated;
+
   const ip = getLanIp();
   const baseUrl = "http://" + ip + ":" + port + "/";
 
@@ -72,6 +77,11 @@ function startServer(opts) {
     if (!b || !b.id) return res.status(400).json({ ok: false, error: "missing id" });
     const booking = store.upsertBooking(b);
     broadcast();
+    // Notify (e.g. send an email). Guarded so a missing callback or a thrown
+    // error here can never break booking creation.
+    if (typeof onBookingCreated === "function") {
+      try { onBookingCreated(booking); } catch (e) { /* never break the booking */ }
+    }
     res.json({ ok: true, booking });
   });
 
@@ -104,6 +114,17 @@ function startServer(opts) {
 
   app.get("/api/qr.png", (req, res) => {
     QRCode.toBuffer(baseUrl, { type: "png", width: 240 }, (err, buf) => {
+      if (err) return res.status(500).end();
+      res.set("Content-Type", "image/png");
+      res.send(buf);
+    });
+  });
+
+  // QR code that links to the EBG Venmo profile (shown on the booking page so
+  // renters can pay/deposit). Encodes the public Venmo profile URL.
+  app.get("/api/venmo-qr.png", (req, res) => {
+    const venmoUrl = "https://venmo.com/u/EdgelessBeautyGroup";
+    QRCode.toBuffer(venmoUrl, { type: "png", width: 360, margin: 1 }, (err, buf) => {
       if (err) return res.status(500).end();
       res.set("Content-Type", "image/png");
       res.send(buf);

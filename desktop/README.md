@@ -55,6 +55,48 @@ To back up, use the **Export** button on the admin dashboard to save a copy of
 the bookings. Keep that backup somewhere safe — if the office computer is lost,
 the data is lost with it unless you have an export.
 
+## Email notifications for new bookings
+
+Every time someone submits a booking, the app notifies three people —
+Jennifer Garcia, Susan Haise, and Bonnie Zeutzius — with a summary of the
+booking (renter, dates, guests/vehicles, amenities, and pricing).
+
+**By default (no setup):** when a booking comes in, your **default mail
+program opens on the office computer** with a new email already addressed to
+all three people and the whole summary filled in. You just review it and hit
+**Send**. (This needs a default mail app set up on that computer, e.g. Outlook
+or the Windows Mail app.)
+
+**Fully automatic (no clicks):** if you'd rather the email send itself with no
+window popping up, create a file named **`settings.json`** in the app's
+user-data folder (the same folder that holds `bookings.json`, typically
+`%APPDATA%\EBG Lake House\`) with an `smtp` block. The app will then send the
+email silently through that mailbox.
+
+Office 365 example (`settings.json`):
+
+```json
+{
+  "smtp": {
+    "host": "smtp.office365.com",
+    "port": 587,
+    "secure": false,
+    "user": "lakehouse@edgelessbeauty.com",
+    "pass": "your-app-password-here",
+    "from": "lakehouse@edgelessbeauty.com"
+  }
+}
+```
+
+- `user` / `from` should be a real mailbox you control.
+- `pass` should be an **app password** (not the normal account password) if the
+  mailbox has multi-factor authentication enabled.
+- After creating or editing `settings.json`, restart the app.
+
+If the SMTP send ever fails (or `settings.json` is missing), nothing breaks —
+the booking is still saved, and the app falls back to opening the pre-addressed
+draft for you.
+
 ## Running just the server (advanced / testing)
 
 You can run the booking server without the desktop shell:

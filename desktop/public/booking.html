@@ -370,10 +370,20 @@
       <div class="field"><input type="text" id="firstName" placeholder=" " autocomplete="given-name"><label for="firstName">First Name</label><div class="err">Please enter your first name.</div></div>
       <div class="field"><input type="text" id="lastName" placeholder=" " autocomplete="family-name"><label for="lastName">Last Name</label><div class="err">Please enter your last name.</div></div>
       <div class="field full"><input type="email" id="email" placeholder=" " autocomplete="email"><label for="email">Company Email</label><div class="err">Please enter a valid corporate email address.</div></div>
-      <div class="field"><input type="text" id="department" placeholder=" "><label for="department">Department / Team</label><div class="err">Please enter your department or team.</div></div>
+      <div class="field"><input type="text" id="department" placeholder=" "><label for="department">Business</label><div class="err">Please enter your business.</div></div>
       <div class="field"><input type="tel" id="phone" placeholder=" " autocomplete="tel"><label for="phone">Phone Number</label><div class="err">Please enter a valid phone number.</div></div>
       <div class="field"><input type="text" id="ecName" placeholder=" "><label for="ecName">Emergency Contact Name</label><div class="err">Please enter an emergency contact name.</div></div>
       <div class="field"><input type="tel" id="ecPhone" placeholder=" "><label for="ecPhone">Emergency Contact Phone</label><div class="err">Please enter a valid emergency contact phone.</div></div>
+      <div class="field full">
+        <select id="bookingReason"><option value="" selected disabled hidden></option><option value="Team Use">Team Use</option><option value="Personal Use">Personal Use</option><option value="Other">Other</option></select>
+        <label for="bookingReason">Booking Reason</label>
+        <div class="err">Please select a booking reason.</div>
+      </div>
+      <div class="field full" id="employeeField" style="display:none;">
+        <select id="employeeName"><option value="" selected disabled hidden></option></select>
+        <label for="employeeName">Employee</label>
+        <div class="err">Please select the employee.</div>
+      </div>
     </div>
     <div class="nav-buttons">
       <button class="btn btn-ghost" data-back>← Back</button>
@@ -393,7 +403,7 @@
     <p class="hint-note">You (the renter) count as 1 guest, so up to 6 additional guests can be added (7 total maximum).</p>
     <div id="guestList"></div>
     <div id="minorBanner" class="info-banner" style="display:none;">
-      <span>🦺</span><span>Wisconsin law requires guests under 16 to have their own properly fitted life jacket on or near the water. Please bring one per minor.</span>
+      <span>🦺</span><span>Wisconsin law requires anyone under 16 to wear a properly fitted life jacket while on or near the water. Life jackets ARE provided at the house and must be worn near the water — or you're welcome to bring your own. Please make sure every minor has one that fits.</span>
     </div>
     <button class="btn btn-outline btn-sm" id="addGuest">Add Guest +</button>
 
@@ -434,14 +444,14 @@
       </div>
     </div>
     <div class="info-banner" id="watercraftWarn" style="display:none;">
-      <span>⚠️</span><span>Boat / wave runner requests are subject to admin approval. You will be notified by email.</span>
+      <span>⚠️</span><span>Boat / wave runner requests are subject to admin approval — they are not guaranteed. A $100 gas deposit is collected when watercraft is requested (any unused portion is returned). You will be notified by email.</span>
     </div>
 
     <div class="receipt">
       <h4>Pricing Summary</h4>
-      <div class="receipt-line"><span>Cleaning Fee <small style="color:var(--medium-gray)">(mandatory)</small></span><span>$300.00</span></div>
-      <div class="receipt-line" id="gasLine" style="display:none;"><span>Watercraft Gas Fee</span><span>$100.00</span></div>
-      <div class="receipt-total"><span>Total</span><span id="receiptTotal">$300.00</span></div>
+      <div class="receipt-line"><span>Cleaning Fee <small style="color:var(--medium-gray)">(mandatory)</small></span><span>$250.00</span></div>
+      <div class="receipt-line" id="gasLine" style="display:none;"><span>Gas Deposit</span><span>$100.00</span></div>
+      <div class="receipt-total"><span>Total</span><span id="receiptTotal">$250.00</span></div>
       <div class="receipt-note">Additional charges may apply for damages per the rental agreement.</div>
     </div>
 
@@ -496,7 +506,7 @@
       <ul>
         <li>The Renter is financially responsible for any damage to the property, watercraft, furnishings, or equipment occurring during the rental period, normal wear excepted.</li>
         <li>The Renter agrees to indemnify and hold harmless the Owner against all claims, demands, costs, and expenses (including reasonable attorney's fees) arising from the Renter's use of the property.</li>
-        <li>A mandatory cleaning fee of $300 applies to every stay. A watercraft gas fee of $100 applies when watercraft is requested.</li>
+        <li>A mandatory cleaning fee of $250 applies to every stay. A $100 gas deposit applies when watercraft is requested; it covers fuel used during the stay, any unused portion is returned, and fuel used beyond the deposit is billed at cost.</li>
       </ul>
 
       <h4>6. Occupancy &amp; Guests</h4>
@@ -524,7 +534,7 @@
     <div class="doc-label">Signature</div>
     <div class="form-grid">
       <div class="field"><input type="text" id="sigName" placeholder=" "><label for="sigName">Full Name</label></div>
-      <div class="field"><input type="text" id="sigDept" placeholder=" "><label for="sigDept">Department / Team</label></div>
+      <div class="field"><input type="text" id="sigDept" placeholder=" "><label for="sigDept">Business</label></div>
       <div class="field"><input type="text" id="sigDate" placeholder=" " readonly><label for="sigDate">Date</label></div>
       <div class="field"><input type="text" id="sigEcName" placeholder=" "><label for="sigEcName">Emergency Contact Name</label></div>
       <div class="field full"><input type="text" id="sigEcPhone" placeholder=" "><label for="sigEcPhone">Emergency Contact Phone</label></div>
@@ -657,6 +667,19 @@
       <div class="field invalid" id="blErrWrap" style="display:none;"><div class="err" style="display:block;">A boating license is required because you requested watercraft.</div></div>
     </div>
 
+    <div class="section-divider"></div>
+
+    <!-- PAYMENT -->
+    <div class="doc-label">Payment</div>
+    <div class="receipt" style="text-align:center;">
+      <h4>Payment — Venmo</h4>
+      <p style="font-size:.92rem;margin-bottom:6px;">Please send payment via Venmo to <strong>@EdgelessBeautyGroup</strong>.</p>
+      <p style="font-size:.85rem;color:var(--medium-gray);margin-bottom:14px;" id="payBreakdown">Cleaning $250</p>
+      <div class="receipt-total" style="justify-content:center;gap:10px;border-top:1px dashed var(--border);padding-top:14px;"><span>Amount Due</span><span id="payAmount">$250</span></div>
+      <div style="margin:16px 0 6px;"><img src="/api/venmo-qr.png" alt="Venmo QR — EdgelessBeautyGroup" style="width:180px;height:180px;border-radius:8px"></div>
+      <p style="font-size:.9rem;"><a href="https://venmo.com/u/EdgelessBeautyGroup" target="_blank" style="color:var(--gold-dark);">venmo.com/u/EdgelessBeautyGroup</a></p>
+    </div>
+
     <div class="nav-buttons">
       <button class="btn btn-ghost" data-back>← Back</button>
       <button class="btn btn-gold btn-lg" id="submitBooking">Submit Booking Request</button>
@@ -674,6 +697,20 @@
 
 </div>
 
+<!-- WATERCRAFT REQUEST MODAL -->
+<div class="modal-overlay" id="watercraftModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close-watercraft>×</button>
+    <h3>Watercraft Request — Please Read</h3>
+    <p style="font-size:.92rem;margin-bottom:14px;">Selecting the boat or wave runners submits a REQUEST — it is not a guaranteed reservation. Watercraft availability is reviewed on a case-by-case basis and may be limited by maintenance or repairs, weekend or holiday demand, weather and lake conditions, and other factors, at the discretion of the property manager. You will be notified whether watercraft is approved for your dates.</p>
+    <h4 style="font-size:1.05rem;color:var(--gold-dark);margin:18px 0 6px;">Operator Requirements</h4>
+    <p style="font-size:.92rem;margin-bottom:14px;">Anyone operating a boat or wave runner must be completely sober — operating under the influence is strictly prohibited and illegal — and must hold a valid boating license with at least 50 logged hours of boating experience.</p>
+    <h4 style="font-size:1.05rem;color:var(--gold-dark);margin:18px 0 6px;">Gas Deposit</h4>
+    <p style="font-size:.92rem;margin-bottom:18px;">A $100 gas deposit is collected when watercraft is requested. It covers fuel used during your stay; any unused portion is returned to you, and fuel used beyond the deposit is billed at cost.</p>
+    <div style="text-align:center;"><button class="btn btn-gold" id="watercraftUnderstand" type="button">I Understand</button></div>
+  </div>
+</div>
+
 <!-- HELP FAB -->
 <button class="help-fab" id="helpFab" aria-label="Help">?</button>
 <div class="modal-overlay" id="helpModal">
@@ -683,7 +720,7 @@
     <ul class="help-list">
       <li><span class="hi">🌙</span><span>Maximum stay is <strong>3 nights</strong>.</span></li>
       <li><span class="hi">🔑</span><span>Check-in <strong>4:00 PM</strong> &nbsp;•&nbsp; Check-out <strong>10:00 AM</strong></span></li>
-      <li><span class="hi">🧹</span><span><strong>$300 cleaning fee</strong> is mandatory on every stay.</span></li>
+      <li><span class="hi">🧹</span><span><strong>$250 cleaning fee</strong> is mandatory on every stay.</span></li>
       <li><span class="hi">⚓</span><span>Boat &amp; wave runners are <strong>subject to admin approval</strong>.</span></li>
       <li><span class="hi">📞</span><span>Questions? Contact <strong>Susan Haise — 414-397-2882</strong></span></li>
     </ul>
@@ -727,6 +764,7 @@
     checkIn:null, checkOut:null, pickPhase:0, /* 0 = pick start, 1 = pick end */
     calY:now.getFullYear(), calM:now.getMonth(),
     guests:[], vehicles:[],
+    purpose:"", employeeName:"",
     amenities:{boat:false, waveRunners:false},
     documents:{driversLicense:null, boatingLicense:null},
     signature:null, sigHasInk:false
@@ -914,6 +952,27 @@
      STEP 2 — RENTER VALIDATION (floating labels handled via CSS)
      ============================================================ */
   var FREE_DOMAINS=["gmail.com","yahoo.com","hotmail.com","outlook.com","aol.com","icloud.com","live.com","msn.com"];
+
+  /* ---------- booking reason + employee picker ---------- */
+  var EMPLOYEES=["Alexis Shutic","Alynn Paccagnella","Amanda Berg","Amanda Faust","Amy Lile","Andrea Minkin","Bonnie Zeutzius","Bridgette Beaumont","Brieana Zanon","Catrina Parsons","Danielle Lawinger","Derek Basa","Diane Pandl","Elizabeth Kiesow","Emma Laskowski","Gaya Sonnichsen","Grace Kotrly","Gregory Crosby","Gregory Mathews","Heather Koch","Helena Quaintance-Strong","Irina Vizgalina","Jamie Jaeger","Jasmine Crafton","Jean Carlson","Jennifer Bauer","Jennifer Phillips","Jessica Rivera-Walz","Kari Kennedy","Kate Guillien","Kerry Meldahl","Kiersti Gefke","Kimberly Vogt","Kristen Strothmann-Peters","Laura Peters","Lisa Ciriacks","Liz Boeshaar","Liz Kellor","Lori Kotrly","Marcia Bergmann","Megan Gibson","Megan Taulbut","Michelle Mikula","Michelle Thom","Michelle Xolot","Nicholas Chapman","Raelynn Lane","Renee Connor","Samantha Hensler","Samantha Kuhagen","Sara Abbott","Sarah Moore","Sepideh Chavoshi","Shari Andrews","Stephanie Tack","Susan Haise","Teresa Tetting"];
+  (function populateEmployees(){
+    var sel=document.getElementById("employeeName");
+    EMPLOYEES.forEach(function(name){
+      var opt=document.createElement("option");
+      opt.value=name; opt.textContent=name;
+      sel.appendChild(opt);
+    });
+  })();
+  var reasonSel=document.getElementById("bookingReason");
+  var empSel=document.getElementById("employeeName");
+  function updateEmployeeVisibility(){
+    var teamUse = reasonSel.value==="Team Use";
+    document.getElementById("employeeField").style.display = teamUse ? "" : "none";
+    if(!teamUse){ empSel.value=""; markSelectFilled(empSel); setFieldError("employeeName",false); }
+  }
+  reasonSel.addEventListener("change",function(){ markSelectFilled(reasonSel); setFieldError("bookingReason",false); updateEmployeeVisibility(); });
+  empSel.addEventListener("change",function(){ markSelectFilled(empSel); setFieldError("employeeName",false); });
+
   function setFieldError(id, show){
     var f=document.getElementById(id).closest(".field");
     f.classList.toggle("invalid", !!show);
@@ -941,8 +1000,14 @@
     if(!validatePhone(ph)){ setFieldError("phone",true); ok=false; } else setFieldError("phone",false);
     if(!en){ setFieldError("ecName",true); ok=false; } else setFieldError("ecName",false);
     if(!validatePhone(ep)){ setFieldError("ecPhone",true); ok=false; } else setFieldError("ecPhone",false);
+    var reason=reasonSel.value;
+    var emp=empSel.value;
+    if(!reason){ setFieldError("bookingReason",true); ok=false; } else setFieldError("bookingReason",false);
+    if(reason==="Team Use" && !emp){ setFieldError("employeeName",true); ok=false; } else setFieldError("employeeName",false);
     if(ok){
       state.renter={firstName:fn,lastName:ln,email:em,department:dep,phone:ph,emergencyContactName:en,emergencyContactPhone:ep};
+      state.purpose=reason;
+      state.employeeName=(reason==="Team Use") ? emp : "";
     }
     return ok;
   }
@@ -1077,20 +1142,36 @@
      STEP 4 — AMENITIES & PRICING
      ============================================================ */
   function toggleAmenity(key, card){
-    state.amenities[key]=!state.amenities[key];
+    var turningOn = !state.amenities[key];
+    state.amenities[key]=turningOn;
     card.classList.toggle("checked", state.amenities[key]);
     updatePricing();
+    if(turningOn && (key==="boat"||key==="waveRunners")){ openWatercraftModal(); }
   }
   document.getElementById("boatCard").addEventListener("click",function(){ toggleAmenity("boat",this); });
   document.getElementById("waveCard").addEventListener("click",function(){ toggleAmenity("waveRunners",this); });
 
+  // watercraft request modal
+  var watercraftModal=document.getElementById("watercraftModal");
+  function openWatercraftModal(){ watercraftModal.classList.add("open"); }
+  function closeWatercraftModal(){ watercraftModal.classList.remove("open"); }
+  document.getElementById("watercraftUnderstand").addEventListener("click",closeWatercraftModal);
+  watercraftModal.addEventListener("click",function(e){ if(e.target===watercraftModal || e.target.hasAttribute("data-close-watercraft")) closeWatercraftModal(); });
+
   function watercraftSelected(){ return state.amenities.boat || state.amenities.waveRunners; }
+  var CLEANING_FEE=250, GAS_DEPOSIT=100;
+  function bookingTotal(){ return CLEANING_FEE + (watercraftSelected()?GAS_DEPOSIT:0); }
   function updatePricing(){
     var wc=watercraftSelected();
     document.getElementById("gasLine").style.display = wc?"flex":"none";
     document.getElementById("watercraftWarn").style.display = wc?"flex":"none";
-    var total=300+(wc?100:0);
+    var total=bookingTotal();
     document.getElementById("receiptTotal").textContent="$"+total.toFixed(2);
+    // payment card (step 5) — keep amount in sync with watercraft selection
+    document.getElementById("payAmount").textContent="$"+total;
+    document.getElementById("payBreakdown").textContent = wc
+      ? "Cleaning $"+CLEANING_FEE+" + Gas deposit $"+GAS_DEPOSIT+" = $"+total
+      : "Cleaning $"+CLEANING_FEE;
     // update boating license label/requirement
     document.getElementById("blLabel").innerHTML = wc
       ? 'Boating License <span style="color:var(--danger)">*</span>'
@@ -1263,10 +1344,12 @@
         emergencyContactName:document.getElementById("sigEcName").value.trim()||r.emergencyContactName,
         emergencyContactPhone:document.getElementById("sigEcPhone").value.trim()||r.emergencyContactPhone
       },
+      purpose:state.purpose||"",
+      employeeName:state.employeeName||"",
       guests:state.guests.map(function(g){return {firstName:g.firstName,lastName:g.lastName,type:g.type};}),
       vehicles:state.vehicles.map(function(v){return {color:v.color,make:v.make,licensePlate:v.licensePlate};}),
       amenities:{boat:state.amenities.boat,waveRunners:state.amenities.waveRunners},
-      pricing:{cleaningFee:300,watercraftGas:wc?100:0,total:300+(wc?100:0)},
+      pricing:{cleaningFee:250,watercraftGas:wc?100:0,total:250+(wc?100:0)},
       documents:{
         driversLicense:state.documents.driversLicense,
         boatingLicense:state.documents.boatingLicense||null
@@ -1324,7 +1407,11 @@
     ["firstName","lastName","email","department","phone","ecName","ecPhone"].forEach(function(id){
       var el=document.getElementById(id); el.value=""; setFieldError(id,false);
     });
-    state.renter={};
+    // reset booking reason + employee picker
+    reasonSel.value=""; markSelectFilled(reasonSel); setFieldError("bookingReason",false);
+    empSel.value=""; markSelectFilled(empSel); setFieldError("employeeName",false);
+    updateEmployeeVisibility();
+    state.renter={}; state.purpose=""; state.employeeName="";
     // reset guests / vehicles / counters
     renderGuests(); renderVehicles();
     // reset amenities + pricing
