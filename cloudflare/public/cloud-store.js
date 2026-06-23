@@ -1,28 +1,31 @@
 /* ============================================================
-   EBG Lake House — LAN storage adapter (desktop app)
+   EBG Lake House — Cloudflare cloud storage adapter
    ------------------------------------------------------------
-   Drop-in replacement for the Microsoft 365 / localStorage
-   storage layer. Exposes the SAME window.EBGStore interface the
-   booking + admin pages already use, but backed by the local
-   HTTP API served by server.js on the office WiFi.
+   Drop-in replacement for the desktop/LAN storage layer. Exposes
+   the SAME window.EBGStore interface the booking + admin pages
+   already use, but backed by the Cloudflare Pages Functions API
+   (D1 for records, R2 for uploaded files).
 
-   - init()        : load state, open a live SSE stream, and (on
-                     the admin page) show a "scan to book" QR card.
+   - init()        : load state, start polling, and (on the admin
+                     page) show a "scan to book on your phone" QR.
    - getBookings() : deep copy of the in-memory booking cache.
    - getBlocked()  : deep copy of the in-memory blocked cache.
    - saveBookings(): diffs vs cache and POST/PATCH/DELETEs.
    - saveBlocked() : diffs vs cache and POST/DELETEs.
 
-   When the server tells us something changed, we re-fetch and
-   fire synthetic `storage` events so the pages re-render exactly
-   as they would on a real cross-tab localStorage change.
+   Polling re-fetches /api/state every 12s; when the payload
+   changes we update the caches and fire synthetic `storage`
+   events so the pages re-render exactly as they would on a real
+   cross-tab localStorage change.
    ============================================================ */
 (function () {
   "use strict";
 
-  var bookings = [];   // in-memory cache of full booking objects
-  var blocked = [];    // in-memory cache of {date, reason}
+  var bookings = [];          // in-memory cache of full booking objects
+  var blocked = [];           // in-memory cache of {date, reason}
   var lastError = "";
+  var lastStateJson = "";     // last raw /api/state payload (for change detection)
+  var pollTimer = null;
 
   function deepCopy(x) {
     try { return JSON.parse(JSON.stringify(x)); } catch (e) { return x; }
@@ -40,21 +43,9 @@
     });
   }
 
-  function fetchState() {
-    return fetch("/api/state").then(function (res) {
-      if (!res.ok) throw new Error("/api/state -> " + res.status);
-      return res.json();
-    }).then(function (state) {
-      bookings = Array.isArray(state.bookings) ? state.bookings : [];
-      blocked = Array.isArray(state.blocked) ? state.blocked : [];
-      return state;
-    });
-  }
-
   // Fire the same storage events the pages listen for, so they re-render.
   function notifyPages() {
     try { window.dispatchEvent(new StorageEvent("storage", { key: "ebg_bookings" })); } catch (e) {
-      // Older engines: fall back to a generic Event with the key attached.
       try { var ev = new Event("storage"); ev.key = "ebg_bookings"; window.dispatchEvent(ev); } catch (e2) {}
     }
     try { window.dispatchEvent(new StorageEvent("storage", { key: "ebg_blocked_dates" })); } catch (e) {
@@ -62,13 +53,68 @@
     }
   }
 
+  // Pull /api/state and, if it changed since last time, update caches
+  // and notify the page. `firstLoad` skips the notify (boot renders itself).
+  function fetchState(firstLoad) {
+    return fetch("/api/state").then(function (res) {
+      if (!res.ok) throw new Error("/api/state -> " + res.status);
+      return res.text();
+    }).then(function (txt) {
+      var changed = txt !== lastStateJson;
+      lastStateJson = txt;
+      var state;
+      try { state = JSON.parse(txt); } catch (e) { state = {}; }
+      bookings = Array.isArray(state.bookings) ? state.bookings : [];
+      blocked = Array.isArray(state.blocked) ? state.blocked : [];
+      if (changed && !firstLoad) notifyPages();
+      return state;
+    });
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(function () {
+      fetchState(false).catch(function (e) {
+        lastError = (e && e.message) || String(e);
+      });
+    }, 12000);
+  }
+
   function isAdminPage() {
     return !!document.getElementById("dashboard");
+  }
+
+  // Compare two bookings while ignoring the hydrated/transient file fields.
+  // After a poll, cached bookings carry documents[slot].data = "/api/file/..."
+  // URLs and signature = "/api/file/..."; comparing those against a freshly
+  // built booking (which has base64 / a real PNG) would PATCH on every save.
+  // We strip those fields so only meaningful changes (status, adminNotes,
+  // rejectionReason, dates, etc.) trigger a PATCH.
+  function stripVolatile(b) {
+    var c = deepCopy(b) || {};
+    if (c.documents) {
+      ["driversLicense", "boatingLicense"].forEach(function (slot) {
+        if (c.documents[slot]) {
+          delete c.documents[slot].data;
+          delete c.documents[slot].stored;
+        }
+      });
+    }
+    delete c.signature;
+    delete c.signatureStored;
+    return c;
+  }
+
+  function sameIgnoringFiles(a, b) {
+    return JSON.stringify(stripVolatile(a)) === JSON.stringify(stripVolatile(b));
   }
 
   // Small "scan to book on your phone" card for the admin window.
   function injectSharePanel() {
     if (document.getElementById("ebgSharePanel")) return;
+    var bookingUrl = location.origin + "/booking.html";
+    var qrSrc = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" +
+      encodeURIComponent(bookingUrl);
     var card = document.createElement("div");
     card.id = "ebgSharePanel";
     card.style.cssText =
@@ -79,50 +125,36 @@
     card.innerHTML =
       '<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.05rem;color:#8B6E3A;font-weight:600;margin-bottom:10px;">' +
         '📱 Scan to book on your phone</div>' +
-      '<img id="ebgShareQr" src="/api/qr.png" alt="QR code" ' +
+      '<img id="ebgShareQr" src="' + qrSrc + '" alt="QR code to booking page" ' +
         'style="width:180px;height:180px;border-radius:10px;background:#fff;border:1px solid #E8E3DA;padding:6px;">' +
       '<div id="ebgShareUrl" style="margin-top:10px;font-size:.78rem;color:#6B6B6B;word-break:break-all;">' +
-        'Loading address…</div>' +
-      '<div style="margin-top:6px;font-size:.7rem;color:#B8965A;letter-spacing:.5px;">SAME WI-FI ONLY</div>';
+        bookingUrl + '</div>';
     document.body.appendChild(card);
-
-    fetch("/api/info").then(function (r) { return r.json(); }).then(function (info) {
-      var el = document.getElementById("ebgShareUrl");
-      if (el && info && info.url) el.textContent = info.url;
-    }).catch(function () {});
-  }
-
-  function openEventStream() {
-    if (typeof EventSource === "undefined") return;
-    var es = new EventSource("/api/events");
-    es.onmessage = function () {
-      // Any change on the server -> re-pull state and re-render the page.
-      fetchState().then(notifyPages).catch(function () {});
-    };
-    es.onerror = function () {
-      // EventSource auto-reconnects; nothing to do here.
-    };
   }
 
   var EBGStore = {
-    mode: "lan",
+    mode: "cloud",
     ready: false,
 
     init: function () {
       var self = this;
-      return fetchState().then(function () {
-        openEventStream();
-        if (isAdminPage()) injectSharePanel();
+      return fetchState(true).then(function () {
+        startPolling();
+        if (isAdminPage()) {
+          try { injectSharePanel(); } catch (e) {}
+        }
         self.ready = true;
-        return { mode: "lan" };
+        return { mode: "cloud" };
       }).catch(function (e) {
         lastError = (e && e.message) || String(e);
+        // Still start polling so a transient boot failure can recover.
+        try { startPolling(); } catch (e2) {}
         self.ready = true;
-        return { mode: "lan", error: lastError };
+        return { mode: "cloud", error: lastError };
       });
     },
 
-    isCloud: function () { return false; },
+    isCloud: function () { return true; },
     lastErrorText: function () { return lastError; },
 
     getBookings: function () { return deepCopy(bookings); },
@@ -132,7 +164,7 @@
     saveBookings: function (all) {
       all = Array.isArray(all) ? all : [];
       var byId = {};
-      bookings.forEach(function (b) { byId[b.id] = b; });
+      bookings.forEach(function (b) { if (b && b.id) byId[b.id] = b; });
       var seen = {};
       var ops = [];
 
@@ -141,10 +173,10 @@
         seen[b.id] = true;
         var cur = byId[b.id];
         if (!cur) {
-          // new booking -> create
+          // new booking -> create (carries base64 data: + signature to upload)
           ops.push(api("POST", "/api/bookings", b));
-        } else if (JSON.stringify(cur) !== JSON.stringify(b)) {
-          // changed -> send the whole object as the patch (server merges fields)
+        } else if (!sameIgnoringFiles(cur, b)) {
+          // meaningful change -> send the whole object; the server merges fields
           ops.push(api("PATCH", "/api/bookings/" + encodeURIComponent(b.id), b));
         }
       });
@@ -169,7 +201,7 @@
     saveBlocked: function (all) {
       all = Array.isArray(all) ? all : [];
       var have = {};
-      blocked.forEach(function (x) { have[x.date] = x; });
+      blocked.forEach(function (x) { if (x && x.date) have[x.date] = x; });
       var want = {};
       all.forEach(function (x) { if (x && x.date) want[x.date] = x; });
       var ops = [];
@@ -194,28 +226,17 @@
       });
     },
 
-    refresh: function () { return fetchState(); },
+    refresh: function () { return fetchState(false); },
 
-    // App version + update capability for the admin Settings page.
+    // App version + update capability for the admin Settings page. The cloud
+    // build is always served at its latest version and never self-updates.
     getAppInfo: function () {
-      return fetch("/api/info").then(function (res) {
-        return res.json();
-      }).then(function (j) {
-        j = j || {};
-        return { version: (j.version || "?"), canUpdate: !!j.canUpdate, mode: "desktop" };
-      }).catch(function () {
-        return { version: "?", canUpdate: false, mode: "desktop" };
-      });
+      return Promise.resolve({ version: "Web (always latest)", canUpdate: false, mode: "cloud" });
     },
 
-    // Kick off an update check; the result surfaces via the electron-updater
-    // dialog in the Electron main process. Never throws.
+    // No-op in the cloud build; there is nothing to update client-side.
     checkForUpdates: function () {
-      return fetch("/api/check-update", { method: "POST" }).then(function () {
-        return true;
-      }).catch(function () {
-        return false;
-      });
+      return Promise.resolve(false);
     }
   };
 

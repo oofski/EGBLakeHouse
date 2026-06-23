@@ -19,6 +19,7 @@ const { startServer } = require("./server");
 
 let serverHandle = null;
 let mainWindow = null;
+let updater = null; // electron-updater autoUpdater, assigned in setupAutoUpdate()
 
 // People who get notified of every new booking.
 const NOTIFY = [
@@ -178,10 +179,22 @@ function notifyNewBooking(booking) {
 // Try a few ports in case 4399 is already in use.
 function startServerWithFallback(dataDir, basePort) {
   const candidates = [basePort, basePort + 1, basePort + 2, basePort + 3, basePort + 4];
+  const version = app.getVersion();
+  // Only the packaged app self-updates; pass a checker that kicks off a check
+  // via the (lazily-assigned) electron-updater instance. null in dev/unpackaged.
+  const onCheckUpdate = app.isPackaged
+    ? function () { try { if (updater) updater.checkForUpdates(); } catch (e) {} }
+    : null;
   let lastErr = null;
   for (const port of candidates) {
     try {
-      return startServer({ dataDir, port, onBookingCreated: notifyNewBooking });
+      return startServer({
+        dataDir,
+        port,
+        onBookingCreated: notifyNewBooking,
+        version: version,
+        onCheckUpdate: onCheckUpdate
+      });
     } catch (e) {
       lastErr = e;
     }
@@ -213,6 +226,7 @@ function setupAutoUpdate() {
   let autoUpdater;
   try { autoUpdater = require("electron-updater").autoUpdater; }
   catch (e) { console.warn("[update] electron-updater unavailable:", e && e.message); return; }
+  updater = autoUpdater; // expose to the rest of the module (manual update checks)
   try {
     autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;

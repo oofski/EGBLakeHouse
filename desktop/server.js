@@ -39,6 +39,14 @@ function startServer(opts) {
   // The server must never crash when run standalone/headless without one.
   const onBookingCreated = opts.onBookingCreated;
 
+  // App version string (Electron passes app.getVersion(); standalone -> "dev").
+  const version = opts.version || "dev";
+
+  // Optional callback that kicks off an app update check. Electron supplies
+  // this only in the packaged app; standalone/headless has none. Guarded so
+  // the server never crashes without one.
+  const onCheckUpdate = opts.onCheckUpdate;
+
   const ip = getLanIp();
   const baseUrl = "http://" + ip + ":" + port + "/";
 
@@ -65,7 +73,21 @@ function startServer(opts) {
 
   // ---- API ----
   app.get("/api/info", (req, res) => {
-    res.json({ url: baseUrl, ip, port });
+    res.json({
+      url: baseUrl,
+      ip,
+      port,
+      version: version,
+      canUpdate: typeof onCheckUpdate === "function"
+    });
+  });
+
+  app.post("/api/check-update", (req, res) => {
+    if (typeof onCheckUpdate === "function") {
+      try { onCheckUpdate(); } catch (e) { /* never throw */ }
+      return res.json({ ok: true });
+    }
+    res.json({ ok: false });
   });
 
   app.get("/api/state", (req, res) => {
