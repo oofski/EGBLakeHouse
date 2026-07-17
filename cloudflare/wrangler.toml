@@ -2,11 +2,6 @@ name = "ebg-lakehouse"
 pages_build_output_dir = "public"
 compatibility_date = "2024-11-01"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "ebg-lakehouse"
-database_id = "PUT_D1_DATABASE_ID_HERE"
-
-[[r2_buckets]]
-binding = "FILES"
-bucket_name = "ebg-lakehouse-files"
+# D1 + R2 bindings are configured in the Cloudflare dashboard
+# (Pages project → Settings → Bindings) so no IDs are needed here.
+# Variable names the Functions expect: DB (D1) and FILES (R2).
